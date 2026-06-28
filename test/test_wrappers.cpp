@@ -3,7 +3,7 @@
 
 #include "core/wrappers.hpp"
 
-#include "tests/tests.hpp"
+#include "core/test/tests.hpp"
 
 #include <set>
 #include <unordered_set>

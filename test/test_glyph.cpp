@@ -3,7 +3,7 @@
 
 #include "core/glyph.hpp"
 
-#include "tests/tests.hpp"
+#include "core/test/tests.hpp"
 
 namespace hjx {
 

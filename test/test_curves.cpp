@@ -3,7 +3,7 @@
 
 #include "core/curves.hpp"
 
-#include "tests/tests.hpp"
+#include "core/test/tests.hpp"
 
 #include "core/coords.hpp"
 
