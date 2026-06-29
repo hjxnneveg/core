@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-// Copyright (c) 2025-2026 Joshua Marshall
-// All rights reserved.
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025-2026 Joshua C Marshall
 
 #pragma once
 
