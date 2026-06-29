@@ -34,7 +34,11 @@ DEFINE_TEST(intersection) {
     // zeroish length
     TEST_EQ(intersect({3,3}, {3,3}, circle{{3,3}, 1}), 0);
     TEST_EQ(intersect({0,0}, {0,0}, circle{{0.5,0}, 1}), 0);
+    TEST_EQ(intersect({0,0}, {0,1e-13}, circle{{0.5,0}, 1}), 0);
+    TEST_EQ(intersect({0,1e-13}, {0,0}, circle{{0.5,0}, 1}), 0);
     TEST_NAN(intersect({0,0}, {0,0}, circle{{5,0}, 1}));
+    TEST_NAN(intersect({0,0}, {0,1e-13}, circle{{5,0}, 1}));
+    TEST_NAN(intersect({0,1e-13}, {0,0}, circle{{5,0}, 1}));
 
     // intersecting finish
     TEST_EQFISH(intersect({0,0}, {1,0}, circle{{2,0}, 1}), 1);

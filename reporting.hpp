@@ -168,7 +168,7 @@
 #define ASSERT_GT_LT(v, low, high) PROVE_GT_LT(v, low, high, REPORT_THROW)
 
 #define ASSERT_IMPLY(ifcnd, thencnd) PROVE_IMPLY(ifcnd, thencnd, REPORT_THROW)
-#define ASSERT_XOR(x, y) PROVE_XOR(x, REPORT_THROW)
+#define ASSERT_XOR(x, y) PROVE_XOR(x, y, REPORT_THROW)
 #define ASSERT_NOT(x) PROVE_NOT(x, REPORT_THROW)
 #define ASSERT_EQFISH(a, b) PROVE_EQFISH(a, b, REPORT_THROW)
 
