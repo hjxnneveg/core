@@ -102,6 +102,11 @@ struct xy : coords {
 
     constexpr float abs() const { return std::hypot(x(), y()); }
 
+    constexpr xy normalize() const {
+        ASSERT_MSG(abs() > 0 && std::isnormal(abs()), *this);
+        return *this * (1.f / abs());
+    }
+
     constexpr float dot(const xy &o) const { return x() * o.x() + y() * o.y(); }
 
     constexpr float autodot() const { return x() * x() + y() * y(); }
@@ -114,10 +119,11 @@ struct xy : coords {
 
     constexpr xy operator-() const { return {-x(), -y()}; }
 
-    template <typename T>
-    constexpr xy operator/(const T &o) const {
-        ASSERT(o);
-        return xy(x() / o, y() / o);
+    constexpr xy operator*(const auto &v) const { return {x() * v, y() * v}; }
+
+    constexpr xy operator/(const auto &v) const {
+        ASSERT(v);
+        return xy(x() / v, y() / v);
     }
 
     constexpr xy &operator+=(const xy &o) { return *this = *this + o; }
@@ -133,13 +139,7 @@ struct xy : coords {
     }
 };
 
-template <typename T>
-constexpr xy operator*(xy c, const T &val) {
-    return xy(c.x() * val, c.y() * val);
-}
-
-template <typename T>
-constexpr xy operator*(const T &val, xy c) { return c * val; }
+constexpr xy operator*(const auto &val, xy c) { return c * val; }
 
 struct polar {
     float r;

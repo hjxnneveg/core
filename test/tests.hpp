@@ -25,11 +25,13 @@
 #define TEST_GT_LT(v, low, high) PROVE_GT_LT(v, low, high, REPORT_THROW)
 
 #define TEST_IMPLY(ifcnd, thencnd) PROVE_IMPLY(ifcnd, thencnd, REPORT_THROW)
-#define TEST_XOR(x, y) PROVE_XOR(x, REPORT_THROW)
+#define TEST_XOR(x, y) PROVE_XOR(x, y, REPORT_THROW)
 #define TEST_NOT(x) PROVE_NOT(x, REPORT_THROW)
-#define TEST_EQFISH(a, b) PROVE_EQFISH(a, b, REPORT_THROW)
+#define TEST_EQFISH(x, y) PROVE_EQFISH(x, y, REPORT_THROW)
 
-#define TEST_REPR(a, b) TEST_EQ(TO_STRING(a), TO_STRING(b))
+#define TEST_NAN(x) TEST_MSG(std::isnan(x), x)
+
+#define TEST_REPR(x, y) TEST_EQ(TO_STRING(x), TO_STRING(y))
 
 #if ASSERTS_ON
 #define TEST_THROW(...)                         \
