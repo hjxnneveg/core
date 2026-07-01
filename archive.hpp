@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "typeutils.hpp"
 #include "glyph.hpp"
 
 #include <bit>
@@ -29,15 +30,12 @@ class archive {
     template <typename T>
     constexpr static void assert_simple() { static_assert(is_simple<T>()); }
 
-    template <trivially_copyable T>
-    static auto repr(T v) {
-        assert_simple<T>();
+    static auto repr(archive_simple auto v) {
         return little_endianize(to_uint(v));
     }
 
-    template <trivially_copyable T, std::integral R>
+    template <archive_simple T, std::integral R>
     static T unrepr(R v) {
-        assert_simple<T>();
         return std::bit_cast<T>(little_endianize(v));
     }
 
@@ -189,7 +187,6 @@ public:
         uint32_t get_uint32() { return get<uint32_t>(); }
         int64_t  get_int64()  { return get<int64_t>(); }
         uint64_t get_uint64() { return get<uint64_t>(); }
-        size_t   get_size_t() { return get<size_t>(); }
 
         template <typename T>
         cursor_t &operator>>(T &v) { v = get<T>(); return *this; }
