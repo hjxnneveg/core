@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "honest_float.hpp"
 #include "direction.hpp"
 #include "mathbits.hpp"
 #include "reporting.hpp"
@@ -50,17 +51,7 @@ struct coords {
     bool integral() const { return phi == std::trunc(phi) && psi == std::trunc(psi); }
 
     friend std::ostream &operator<<(std::ostream &os, coords p) {
-        auto dump = [&](float x) {
-            if (std::isnan(x)) os << "[nan#" << nan::payload(x) << "]";
-            else { // fixme - precision, hex, etc
-                os << std::setprecision(std::numeric_limits<float>::max_digits10)
-                   << x;
-            }
-
-            return "";
-        };
-
-        return os << "(" << dump(p.phi) << "," << dump(p.psi) << ")";
+        return os << "(" << honest_float(p.phi) << "," << honest_float(p.psi) << ")";
     }
 
 protected:
@@ -134,7 +125,7 @@ struct xy : coords {
 
     friend std::ostream &operator<<(std::ostream &o, const xy &c) {
         return c ?
-            o << "(" << c.x() << "," << c.y() << ")" :
+            o << "(" << honest_float(c.x()) << "," << honest_float(c.y()) << ")" :
             o << "(nil)";
     }
 };
@@ -151,7 +142,7 @@ struct polar {
 };
 
 inline std::ostream &operator<<(std::ostream &o, const polar &c) {
-    return o << '(' << c.r << ',' << c.theta << ')';
+    return o << '(' << honest_float(c.r) << ',' << c.theta << ')';
 }
 
 inline xy::xy(polar c): coords(c.r * std::cos(c.theta.rad()),
@@ -228,7 +219,7 @@ struct qrs : coords {
 
     constexpr float q() const { return phi; }
     constexpr float r() const { return psi; }
-    constexpr float s() const { return -q() - r(); }
+    constexpr float s() const { return -q() - r() + 0; }
 
     constexpr qrs operator+(const qrs &o) const {
         ASSERT(*this); ASSERT(o);
@@ -332,7 +323,9 @@ struct qrs : coords {
 
     friend std::ostream &operator<<(std::ostream &os, qrs c) {
         if (!c) return os << "[dud]";
-        return os << '[' << c.q() << ',' << c.r() << ',' << c.s() + 0 << ']';
+        return os << '[' << honest_float(c.q())
+                  << ',' << honest_float(c.r())
+                  << ',' << honest_float(c.s()) << ']';
     }
 };
 
