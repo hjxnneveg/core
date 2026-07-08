@@ -4,6 +4,7 @@
 #pragma once
 
 #include <core/logging.hpp>
+#include <core/mathbits.hpp>
 #include <core/reporting.hpp>
 #include <core/glyph.hpp>
 #include <core/coords.hpp>
@@ -18,9 +19,112 @@
 
 namespace hjx::hex {
 
+//           Memory layout (width 5)           //
+//                                             //
+//                   ------                    //
+//                  /      \                   //
+//            ------    7   ------             //
+//           /      \      /      \            //
+//     ------    3   ------   12   ------      //
+//    /      \      /      \      /      \     //
+//   -    0   ------    8   ------   16   -    //
+//    \      /      \      /      \      /     //
+//     ------    4   ------   13   ------      //
+//    /      \      /      \      /      \     //
+//   -    1   ------    9   ------   17   -    //
+//    \      /      \      /      \      /     //
+//     ------    5   ------   14   ------      //
+//    /      \      /      \      /      \     //
+//   -    2   ------   10   ------   18   -    //
+//    \      /      \      /      \      /     //
+//     ------    6   ------   15   ------      //
+//           \      /      \      /            //
+//            ------   11   ------             //
+//                  \      /                   //
+//                   ------                    //
+
+// Consider a spiral approach with 0 at the center.
+// - allows expanding small maps
+// - better cache-locality at center, where the action likely is
+//
+// e.g. https://github.com/lucidbrot/hexgridspiral
+
 constexpr size_t count(uint16_t width) {
     return size_t(width) * width - width/2 * (width/2 + 1);
 }
+
+constexpr bool in_bounds(int q, int r, uint16_t width) {
+    float len = width/2;
+    return math::abs(q) <= len && math::abs(r) <= len && math::abs(-q-r) <= len;
+}
+
+constexpr bool in_bounds(qrs pos, uint16_t width) {
+    ASSERT_MSG(pos.integral(), pos);
+    return in_bounds(pos.q(), pos.r(), width);
+}
+
+// Map cubics to 0..count-1
+constexpr size_t to_scalar(int q, int r, uint16_t width) {
+    ASSERT_MSG(in_bounds(q, r, width), qrs(q, r));
+
+    size_t trilen = width/2;
+    size_t tricnt = trilen * (trilen + 1) / 2;
+
+    size_t full = r + trilen + width * (q + trilen);
+    if (q <= 0) return full - tricnt + q * (q + 1) / 2;
+    else        return full - tricnt - q * (q - 1) / 2;
+}
+
+constexpr qrs scalar_to_qrs(size_t n, uint16_t width) {
+    ASSERT_LT(n, count(width));
+    const int edgelen = width/2;
+    // size of "missing" triangle
+    const int trisize = edgelen * (edgelen + 1) / 2;
+    //       3
+    //    1
+    // 0     4
+    //    2
+    //       5
+    int rebased_n = n + trisize;
+
+    if (rebased_n >= width * (width + 1) / 2)
+        return -scalar_to_qrs(count(width) - n - 1, width);
+
+    // solve col * (col + 1) / 2 = n
+    int rebased_col = sqrtf(0.25f + 2 * rebased_n) - 0.5f;
+
+    float q = rebased_col - 2 * edgelen;
+    float r
+        = rebased_n
+        - rebased_col * (rebased_col + 3) / 2
+        + edgelen;
+
+    return {q, r};
+}
+
+void foreach(uint16_t width, std::invocable<qrs> auto &&f) {
+    float len = width/2;
+
+    for (float q = -len; q < 0; q++)
+        for (float s = len; s >= -len - q; s--)
+            f(qrs{q, -q-s});
+
+    for (float q = 0; q <= len; q++)
+        for (float r = -len; r <= len - q; r++)
+            f(qrs{q, r});
+}
+
+void foreach_neighbor(qrs pos, uint16_t width, auto &&f) {
+    ASSERT_MSG(pos.integral(), pos);
+
+    if (in_bounds(pos.north(), width)) f(pos.north());
+    if (in_bounds(pos.ne(),    width)) f(pos.ne());
+    if (in_bounds(pos.se(),    width)) f(pos.se());
+    if (in_bounds(pos.south(), width)) f(pos.south());
+    if (in_bounds(pos.sw(),    width)) f(pos.sw());
+    if (in_bounds(pos.nw(),    width)) f(pos.nw());
+}
+
 
 template <typename Hex>
 class grid {
@@ -45,29 +149,26 @@ public:
 
     void wipe() { for (Hex &e : grid_) e = Hex(); }
 
-    bool in_bounds(qrs c) const {
-        float len = width_/2;
-        return std::abs(c.q()) <= len
-            && std::abs(c.r()) <= len
-            && std::abs(c.s()) <= len;
+    bool in_bounds(qrs pos) const {
+        ASSERT_MSG(pos.integral(), pos << " not integral");
+        return hex::in_bounds(pos.q(), pos.r(), width_);
     }
 
-    bool in_bounds(int64_t q, int64_t r) const {
-        int64_t len = width_/2;
-        return math::abs(q) <= len && math::abs(r) <= len && math::abs(-q - r) <= len;
+    bool in_bounds(int q, int r) const {
+        return in_bounds(q, r, width_);
     }
 
-    void assert_in_bounds(qrs c) const {
-        ASSERT_MSG(in_bounds(c), c << " out of bounds");
+    void assert_in_bounds(qrs pos) const {
+        ASSERT_MSG(in_bounds(pos), pos << " out of bounds");
     }
 
-    bool border(qrs c) const {
-        assert_in_bounds(c);
-        ASSERT_MSG(c.integral(), c << " not integral");
+    bool border(qrs pos) const {
+        assert_in_bounds(pos);
+        ASSERT_MSG(pos.integral(), pos << " not integral");
 
-        return fabs(c.q()) == width_/2
-            || fabs(c.r()) == width_/2
-            || fabs(c.s()) == width_/2;
+        return math::abs(int(pos.q())) == width_/2
+            || math::abs(int(pos.r())) == width_/2
+            || math::abs(int(pos.s())) == width_/2;
     }
 
     auto begin() { return grid_.data(); }
@@ -79,18 +180,6 @@ public:
 
     void foreach(std::invocable<const Hex&> auto &&f) const {
         for (const Hex &hx : grid_) f(hx);
-    }
-
-    void foreach(std::invocable<qrs> auto &&f) const {
-        float len = width_/2;
-
-        for (float q = -len; q < 0; q++)
-            for (float s = len; s >= -len - q; s--)
-                f(qrs{q, -q-s});
-
-        for (float q = 0; q <= len; q++)
-            for (float r = -len; r <= len - q; r++)
-                f(qrs{q, r});
     }
 
     void foreach(std::invocable<qrs, Hex&> auto &&f) {
@@ -115,104 +204,15 @@ public:
         if (in_bounds(pos.nw()))    f(pos.nw());
     }
 
-    // consider
-    // template <unsigned N> std::array<qrs> find_greatest(auto &&gt);
-    std::vector<qrs> find_greatest(unsigned n, auto &&gt) const {
-        ASSERT_LT(n, count());
+    size_t to_scalar(int q, int r) const { return hex::to_scalar(q, r, width_); }
 
-        std::priority_queue<qrs, std::vector<qrs>, std::decay_t<decltype(gt)>>
-            heap(std::forward<decltype(gt)>(gt));
-
-        std::vector<qrs> ret;
-        ret.reserve(n);
-
-        foreach([&](qrs pos) {
-            heap.push(pos);
-            if (n) n--; else heap.pop();
-        });
-
-        while (!heap.empty()) {
-            ret.push_back(heap.top());
-            heap.pop();
-        }
-
-        return ret;
+    size_t to_scalar(qrs pos) const {
+        assert_in_bounds(pos);
+        ASSERT_MSG(pos.integral(), pos);
+        return to_scalar(pos.q(), pos.r());
     }
 
-    //           Memory layout (width 5)           //
-    //                                             //
-    //                   ------                    //
-    //                  /      \                   //
-    //            ------    7   ------             //
-    //           /      \      /      \            //
-    //     ------    3   ------   12   ------      //
-    //    /      \      /      \      /      \     //
-    //   -    0   ------    8   ------   16   -    //
-    //    \      /      \      /      \      /     //
-    //     ------    4   ------   13   ------      //
-    //    /      \      /      \      /      \     //
-    //   -    1   ------    9   ------   17   -    //
-    //    \      /      \      /      \      /     //
-    //     ------    5   ------   14   ------      //
-    //    /      \      /      \      /      \     //
-    //   -    2   ------   10   ------   18   -    //
-    //    \      /      \      /      \      /     //
-    //     ------    6   ------   15   ------      //
-    //           \      /      \      /            //
-    //            ------   11   ------             //
-    //                  \      /                   //
-    //                   ------                    //
-
-    // Consider a spiral approach with 0 at the center.
-    // - allows expanding small maps
-    // - better cache-locality at center, where the action likely is
-    //
-    // e.g. https://github.com/lucidbrot/hexgridspiral
-
-    // Map cubics to 0..count-1
-    size_t to_scalar(int q, int r) const {
-        ASSERT_MSG(in_bounds(q, r), qrs(q, r));
-
-        size_t trilen = width_/2;
-        size_t tricnt = trilen * (trilen + 1) / 2;
-
-        size_t full = r + trilen + width_ * (q + trilen);
-        if (q <= 0) return full - tricnt + q * (q + 1) / 2;
-        else        return full - tricnt - q * (q - 1) / 2;
-    }
-
-    size_t to_scalar(qrs c) const {
-        assert_in_bounds(c);
-        ASSERT_MSG(c.integral(), c);
-        return to_scalar(c.q(), c.r());
-    }
-
-    qrs scalar_to_qrs(size_t n) const {
-        ASSERT_LT(n, count_);
-        const int edgelen = width_/2;
-        // size of "missing" triangle
-        const int trisize = edgelen * (edgelen + 1) / 2;
-        //       3
-        //    1
-        // 0     4
-        //    2
-        //       5
-        int rebased_n = n + trisize;
-
-        if (rebased_n >= width_ * (width_ + 1) / 2)
-            return -scalar_to_qrs(count_ - n - 1);
-
-        // solve col * (col + 1) / 2 = n
-        int rebased_col = sqrtf(0.25f + 2 * rebased_n) - 0.5f;
-
-        float q = rebased_col - 2 * edgelen;
-        float r
-            = rebased_n
-            - rebased_col * (rebased_col + 3) / 2
-            + edgelen;
-
-        return qrs{q, r};
-    }
+    qrs scalar_to_qrs(size_t n) const { return hex::scalar_to_qrs(n, width_); }
 
     size_t to_scalar(const Hex &hx) const {
         ASSERT_GE_LT(&hx, &grid_[0], &grid_[0] + count_);
@@ -222,9 +222,9 @@ public:
     qrs to_qrs(const Hex &hx) const { return scalar_to_qrs(to_scalar(hx)); }
 
     Hex &to_hex(size_t i) { ASSERT_LT(i, count_); return grid_[i]; }
-    Hex &to_hex(qrs c) { return to_hex(to_scalar(c)); }
+    Hex &to_hex(qrs pos) { return to_hex(to_scalar(pos)); }
     const Hex &to_hex(size_t i) const { ASSERT_LT(i, count_); return grid_[i]; }
-    const Hex &to_hex(qrs c) const { return to_hex(to_scalar(c)); }
+    const Hex &to_hex(qrs pos) const { return to_hex(to_scalar(pos)); }
 
     const Hex &to_hex(int q, int r) const {
         ASSERT_MSG(in_bounds(q, r), qrs(q, r));
