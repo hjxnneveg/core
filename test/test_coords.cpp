@@ -22,7 +22,7 @@ DEFINE_TEST(coords) {
     TEST_EQ(xy(0, 1), xy(0, 1));
 
     TEST_EQ(xy(3, 4).abs(), 5);
-    TEST_EQFISH(polar(xy(1, 1)).r, sqrt(2));
+    TEST_EQFISH(polar(xy(1, 1)).r, math::sqrt2);
 
     qrs p;
     TEST_NOT(p);
@@ -79,6 +79,48 @@ DEFINE_TEST(qrs_rotate) {
     TEST_EQ(qrs( 0,  3).rotate_r(), qrs(-3,  3));
     TEST_EQ(qrs(-3,  3).rotate_r(), qrs(-3,  0));
     TEST_EQ(qrs(-3,  0).rotate_r(), qrs( 0, -3));
+}
+
+DEFINE_TEST(to_qrsi) {
+    constexpr float e = math::sqrt3/3;  // edge length
+    constexpr float dx = math::sqrt3/2; // dist to next column
+
+    // centers
+    TEST_EQ(to_qrsi(0, 0),      qrs( 0, 0));
+    TEST_EQ(to_qrsi(dx, 0.5),   qrs( 1, 0));
+    TEST_EQ(to_qrsi(2 * dx, 0), qrs( 2,-1));
+    TEST_EQ(to_qrsi(-dx, 0.5),  qrs(-1, 1));
+    TEST_EQ(to_qrsi(0, -3),     qrs( 0,-3));
+
+    // one point per branch of the old strip classifier
+    TEST_EQ(to_qrsi(0.2 * e, 0.7), qrs(0, 1)); // A: above midline
+    TEST_EQ(to_qrsi(0.2 * e, 0.3), qrs(0, 0)); // A: below
+    TEST_EQ(to_qrsi(0.7 * e, 0.8), qrs(0, 1)); // B: above y = slope * x
+    TEST_EQ(to_qrsi(0.7 * e, 0.4), qrs(1, 0)); // B: between the slants
+    TEST_EQ(to_qrsi(0.7 * e, 0.2), qrs(0, 0)); // B: below y = 1 - slope * x
+    TEST_EQ(to_qrsi(1.5 * e, 0.9), qrs(1, 0)); // C: full-height band
+    TEST_EQ(to_qrsi(1.5 * e, 0.1), qrs(1, 0));
+    TEST_EQ(to_qrsi(2.3 * e, 0.8), qrs(2, 0)); // D: above y = 3 - slope * x
+    TEST_EQ(to_qrsi(2.3 * e, 0.5), qrs(1, 0)); // D: between
+    TEST_EQ(to_qrsi(2.3 * e, 0.1), qrs(2,-1)); // D: below y = slope * x - 2
+    TEST_EQ(to_qrsi(2.8 * e, 0.7), qrs(2, 0)); // E: above midline
+    TEST_EQ(to_qrsi(2.8 * e, 0.2), qrs(2,-1)); // E: below
+
+    // negative x: mirror-bug test
+    TEST_EQ(to_qrsi(-0.7 * e, 0.4), qrs(-1, 1));
+    TEST_EQ(to_qrsi(-0.2 * e, 0.3), qrs( 0, 0));
+
+    // cross-period in y, and both-negative
+    TEST_EQ(to_qrsi( 0.2 * e, -0.7), qrs( 0,-1));
+    TEST_EQ(to_qrsi(-2.3 * e, -0.5), qrs(-1, 0));
+
+    // far out
+    TEST_EQ(to_qrsi(400 * dx,        100),   qrs(400, -100));
+    TEST_EQ(to_qrsi(400 * dx + 0.2f, 99.7f), qrs(400, -100));
+
+    // boundary ownership, if anybody cares
+    TEST_EQ(to_qrsi(0, 0.5), qrs(0, 1));
+    TEST_EQ(to_qrsi(0,-0.5), qrs(0,-1));
 }
 
 }

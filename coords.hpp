@@ -70,7 +70,7 @@ struct xy : coords {
 
     constexpr xy(float x, float y): coords(x, y) {}
 
-    constexpr explicit xy(const qrs &c) { qrs2xy(&phi, &psi, c); } // fixme
+    constexpr explicit xy(const qrs &c) { qrs2xy(&phi, &psi, c); }
 
     explicit xy(polar);
 
@@ -93,6 +93,8 @@ struct xy : coords {
 
     constexpr float abs() const { return std::hypot(x(), y()); }
 
+    constexpr float radians() const { return std::atan2(y(), x()); }
+
     constexpr xy normalize() const {
         ASSERT_MSG(abs() > 0 && std::isnormal(abs()), *this);
         return *this * (1.f / abs());
@@ -102,7 +104,7 @@ struct xy : coords {
 
     constexpr float autodot() const { return x() * x() + y() * y(); }
 
-    uint64_t hash() const { return ::hjx::hash(id()); }
+    constexpr uint64_t hash() const { return ::hjx::hash(id()); }
 
     constexpr xy operator+(const xy &o) const { return {x() + o.x(), y() + o.y()}; }
 
@@ -120,8 +122,7 @@ struct xy : coords {
     constexpr xy &operator+=(const xy &o) { return *this = *this + o; }
     constexpr xy &operator*=(const auto &o) { return *this = *this * o; }
 
-    template <typename T>
-    xy &operator/=(const T &o) { return *this = *this / o; }
+    xy &operator/=(const auto &o) { return *this = *this / o; }
 
     friend std::ostream &operator<<(std::ostream &o, const xy &c) {
         return c ?
@@ -271,18 +272,20 @@ struct qrs : coords {
     float x() const { ASSERT(*this); return math::sqrt3/2 * q(); }
     float y() const { ASSERT(*this); return r() + 0.5f * q(); }
 
-    xy cartesian() const { return xy(x(), y()); }
+    xy cartesian() const { return xy{x(), y()}; }
+
+    constexpr float radians() const { return xy{*this}.radians(); }
 
     constexpr qrs rotate_l(unsigned n=1) const {
         ASSERT(*this);
         ASSERT_GE_LE(n, 0, 5);
         switch (n) {
         case 0: return *this;
-        case 1: return qrs(-s(), -q());
-        case 2: return qrs( r(),  s());
-        case 3: return qrs(-q(), -r());
-        case 4: return qrs( s(),  q());
-        case 5: return qrs(-r(), -s());
+        case 1: return qrs{-s(), -q()};
+        case 2: return qrs{ r(),  s()};
+        case 3: return qrs{-q(), -r()};
+        case 4: return qrs{ s(),  q()};
+        case 5: return qrs{-r(), -s()};
         default: ERROR(n);
         }
     }
@@ -331,7 +334,7 @@ struct qrs : coords {
 
 static_assert(sizeof(qrs) <= sizeof(size_t));
 
-constexpr inline void qrs2xy(float *x, float *y, const qrs &c) {
+constexpr void qrs2xy(float *x, float *y, const qrs &c) {
     *x = math::sqrt3/2 * c.q();
     *y = c.r() + 0.5f * c.q();
 }
@@ -386,48 +389,21 @@ inline float manhattan_dist(qrs a, qrs b) {
     return (abs(a.q() - b.q()) + abs(a.r() - b.r()) + abs(a.s() - b.s())) / 2;
 }
 
-#if 0
-inline qrs<int> to_qrsi(float x, float y) {
-    constexpr float edgelen = math::sqrt3/3;
-    constexpr float slope = 1 / edgelen;
+inline qrs to_qrsi(float x, float y) {
+    constexpr float qscale = 2 / math::sqrt3; // 1 / (1.5 * edgelen)
 
-    float xrem = fmodf(x, 3*edgelen);
-    bool xneg = xrem < 0;
-    if (xneg) xrem = -xrem;
+    float qf = x * qscale;
+    float rf = y - 0.5f * qf;
+    float sf = -qf - rf;
 
-    float yrem = fmodf(y, 1);
-    bool yneg = yrem < 0;
-    if (yneg) yrem = -yrem;
+    float q = std::round(qf), r = std::round(rf), s = std::round(sf);
+    float dq = std::abs(q - qf), dr = std::abs(r - rf), ds = std::abs(s - sf);
 
-    qrs<int> ret;
+    if      (dq > dr && dq > ds) q = -r - s;
+    else if (dr > ds)            r = -q - s;
+    // ds largest: q, r already correct
 
-    if (xrem < edgelen/2) {
-        if (yrem > 0.5) ret = qrs<int>(0, 1);
-        else ret = qrs<int>(0, 0);
-    }
-    else if (xrem < edgelen) {
-        if (yrem > slope * xrem) ret = qrs<int>(0, 1);
-        else if (yrem > 1 - slope * xrem) ret = qrs<int>(1, 0);
-        else ret = qrs<int>(0, 0);
-    }
-    else if (xrem < 2*edgelen) {
-        ret = qrs<int>(1, 0);
-    }
-    else if (xrem < 5*edgelen/2) {
-        if (yrem > 3 - slope * xrem) ret = qrs<int>(2, 0);
-        else if (yrem > slope * xrem - 2) ret = qrs<int>(1, 0);
-        else ret = qrs<int>(2, -1);
-    }
-    else if (yrem > 0.5) {
-        ret = qrs<int>(2, 0);
-    }
-    else {
-        ret = qrs<int>(2, -1);
-    }
-
-    return ret; // fixme
-    //return qrs<int>(ret.q() + x * 3*edgelen/2, ret.r() + y);
+    return {q, r};
 }
-#endif
 
 }
