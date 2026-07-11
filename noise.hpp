@@ -92,6 +92,8 @@ public:
         return perl.noise3D(x, y, default_offset);
     }
 
+    float operator()(xy p) const { return (*this)(p.x(), p.y()); }
+
     float operator()(float x, float y, float z) const {
         return perl.noise3D(x, y, z);
     }
@@ -106,6 +108,12 @@ public:
                   std::integral auto n,
                   std::floating_point auto persistence) const {
         return perl.octave3D(x, y, default_offset, n, persistence);
+    }
+
+    float octaves(xy p,
+                  std::integral auto n,
+                  std::floating_point auto persistence) const {
+        return octaves(p.x(), p.y(), n, persistence);
     }
 
     float octaves(float x, float y, float z,
@@ -142,6 +150,43 @@ public:
 
     float operator()(float a, float b, float c, float d) const {
         return stegu::snoise4(perm, a, b, c, d);
+    }
+
+    float operator()(xy p) const {
+        return stegu::snoise2(perm, p.x(), p.y());
+    }
+
+    // too smooth near origin, like perlin
+    float octaves(float a, float b,
+                  std::integral auto n, std::floating_point auto persistence) const {
+        ASSERT_GT(n, 0);
+
+        float ret = 0;
+        float amplitude = 1;
+
+        while (n--) {
+            ret += (*this)(a, b) * amplitude;
+            a *= 2;
+            b *= 2;
+            amplitude *= persistence;
+        }
+
+        return ret;
+    }
+
+    float octaves(xy p, std::integral auto n, std::floating_point auto persistence) const {
+        ASSERT_GT(n, 0);
+
+        float ret = 0;
+        float amplitude = 1;
+
+        while (n--) {
+            ret += (*this)(p) * amplitude;
+            p *= 2;
+            amplitude *= persistence;
+        }
+
+        return ret;
     }
 };
 

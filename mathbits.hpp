@@ -206,7 +206,7 @@ constexpr float sqrt2 = std::numbers::sqrt2;
 constexpr float sqrt3 = std::numbers::sqrt3;
 constexpr float pi = std::numbers::pi;
 
-auto abs(std::signed_integral auto x) NOTHROW {
+constexpr auto abs(std::signed_integral auto x) NOTHROW {
     using T = decltype(x);
     ASSERT_NE(x, std::numeric_limits<T>::min());
     T mask = x >> std::numeric_limits<T>::digits;
@@ -214,7 +214,7 @@ auto abs(std::signed_integral auto x) NOTHROW {
 }
 
 
-auto abs(std::unsigned_integral auto x) noexcept { return x; }
+constexpr auto abs(std::unsigned_integral auto x) noexcept { return x; }
 
 template <arithmetic T, arithmetic M>
 constexpr T mod(T a, M m) NOTHROW {

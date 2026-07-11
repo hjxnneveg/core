@@ -13,7 +13,6 @@ namespace hjx {
 // assumes T{} is false
 template <typename T, unsigned N, typename F>
 class winners {
-public:
     F conflict;
     T arr[N]{}; // unsorted
 

@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cmath>
 #include <concepts>
+#include <random>
 
 namespace hjx {
 
@@ -305,6 +306,7 @@ inline T randidx(auto &&rand, T sz) { // [0, sz-1]
 template <std::ranges::random_access_range R>
 requires std::permutable<std::ranges::iterator_t<R>>
 void shuffle(R &&range, auto &&rand) {
+    // todo - standardize rng and use std::shuffle
     // Fisher-Yates
     auto first = std::ranges::begin(range);
     auto N = std::ranges::distance(range);
@@ -314,8 +316,9 @@ void shuffle(R &&range, auto &&rand) {
 }
 
 inline uint64_t new_seed() {
-    auto now = std::chrono::steady_clock::now();
-    return hash(now.time_since_epoch().count());
+    std::random_device rd;
+    uint64_t high = rd();
+    return high << 32 | rd();
 }
 
 }

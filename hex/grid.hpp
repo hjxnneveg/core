@@ -59,13 +59,13 @@ constexpr bool in_bounds(int q, int r, uint16_t width) {
 }
 
 constexpr bool in_bounds(qrs pos, uint16_t width) {
-    ASSERT_MSG(pos.integral(), pos);
+    ASSERT_MSG(pos.integral(), "out of bounds " << pos);
     return in_bounds(pos.q(), pos.r(), width);
 }
 
 // Map cubics to 0..count-1
 constexpr size_t to_scalar(int q, int r, uint16_t width) {
-    ASSERT_MSG(in_bounds(q, r, width), qrs(q, r));
+    ASSERT_MSG(in_bounds(q, r, width), "out of bounds " << qrs(q, r));
 
     size_t trilen = width/2;
     size_t tricnt = trilen * (trilen + 1) / 2;
@@ -184,6 +184,19 @@ public:
 
     void foreach(std::invocable<qrs, Hex&> auto &&f) {
         Hex *hx = grid_.data();
+        float len = width_/2;
+
+        for (float q = -len; q < 0; q++)
+            for (float s = len; s >= -len - q; s--)
+                f(qrs{q, -q-s}, *hx++);
+
+        for (float q = 0; q <= len; q++)
+            for (float r = -len; r <= len - q; r++)
+                f(qrs{q, r}, *hx++);
+    }
+
+    void foreach(std::invocable<qrs, Hex&> auto &&f) const {
+        const Hex *hx = grid_.data();
         float len = width_/2;
 
         for (float q = -len; q < 0; q++)

@@ -185,11 +185,6 @@
 #define ASSERT_LE(x, y)
 #define ASSERT_GE(x, y)
 
-#define ASSERT_GE_LE(low, v, high)
-#define ASSERT_GE_LT(low, v, high)
-#define ASSERT_GT_LE(low, v, high)
-#define ASSERT_GT_LT(low, v, high)
-
 #define ASSERT_GE_LE(v, low, high)
 #define ASSERT_GE_LT(v, low, high)
 #define ASSERT_GT_LE(v, low, high)

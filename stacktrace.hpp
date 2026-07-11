@@ -3,11 +3,8 @@
 
 #pragma once
 
+#include "ckillers.hpp"
 #include "util.hpp"
-
-//#define BOOST_STACKTRACE_USE_ADDR2LINE
-#define BOOST_STACKTRACE_USE_BACKTRACE // fixme - clang
-#include <boost/stacktrace.hpp>
 
 namespace hjx {
 
