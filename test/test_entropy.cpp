@@ -263,6 +263,9 @@ DEFINE_TEST(permutation) {
         }
 
         TEST_EQ(perm.rng_().invoked, 1);
+        TEST_EQ(perm(), 1);
+        TEST_EQ(perm(), 2);
+        TEST_THROW(perm());
     }
 
     {

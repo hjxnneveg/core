@@ -321,18 +321,6 @@ class permutation {
     unsigned progress = 0;
     std::array<unsigned, N> arr;
 
-public:
-    permutation(uint64_t seed): rand(seed) {
-        std::iota(arr.begin(), arr.end(), 0);
-    }
-
-    unsigned operator()() {
-        ASSERT_LT(progress, N);
-        unsigned i = randint(rand, progress, N-1);
-        std::swap(arr[progress], arr[i]);
-        return arr[progress++];
-    }
-
     // fragile and destructive, just my ty^H^H^H^H^H^H^H^H^H^Hfor range-based loops
     struct iterator {
         permutation *perm;
@@ -347,6 +335,18 @@ public:
 
         bool operator==(const iterator&) const = default;
     };
+
+public:
+    permutation(uint64_t seed): rand(seed) {
+        std::iota(arr.begin(), arr.end(), 0);
+    }
+
+    unsigned operator()() {
+        ASSERT_LT(progress, N);
+        unsigned i = randint(rand, progress, N-1);
+        std::swap(arr[progress], arr[i]);
+        return arr[progress++];
+    }
 
     iterator begin() { return {progress < N ? this : nullptr}; }
     iterator end() { return {nullptr}; }
