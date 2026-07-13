@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "algo.hpp"
+
 #include <core/logging.hpp>
 #include <core/mathbits.hpp>
 #include <core/reporting.hpp>
@@ -48,20 +50,6 @@ namespace hjx::hex {
 // - better cache-locality at center, where the action likely is
 //
 // e.g. https://github.com/lucidbrot/hexgridspiral
-
-constexpr size_t count(uint16_t width) {
-    return size_t(width) * width - width/2 * (width/2 + 1);
-}
-
-constexpr bool in_bounds(int q, int r, uint16_t width) {
-    float len = width/2;
-    return math::abs(q) <= len && math::abs(r) <= len && math::abs(-q-r) <= len;
-}
-
-constexpr bool in_bounds(qrs pos, uint16_t width) {
-    ASSERT_MSG(pos.integral(), "out of bounds " << pos);
-    return in_bounds(pos.q(), pos.r(), width);
-}
 
 // Map cubics to 0..count-1
 constexpr size_t to_scalar(int q, int r, uint16_t width) {
@@ -123,6 +111,38 @@ void foreach_neighbor(qrs pos, uint16_t width, auto &&f) {
     if (in_bounds(pos.south(), width)) f(pos.south());
     if (in_bounds(pos.sw(),    width)) f(pos.sw());
     if (in_bounds(pos.nw(),    width)) f(pos.nw());
+}
+
+inline auto neighbors(qrs pos, int width) {
+    constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
+
+    class iterator {
+        qrs center;
+        int width, i;
+
+        void set() { while (i < 6 && !in_bounds(center + seq[i], width)) i++; }
+
+    public:
+        iterator(qrs center, int width, int i): center(center), width(width), i(i) {
+            ASSERT_MSG(in_bounds(center, width), center << " vs " << width);
+            set();
+        }
+
+        qrs operator*() const { ASSERT_LT(i, 6); return center + seq[i]; }
+
+        iterator &operator++() { ASSERT_LT(i, 6); i++; set(); return *this; }
+
+        bool operator==(const iterator&) const = default;
+    };
+
+    struct range {
+        qrs center;
+        int width;
+        iterator begin() { return {center, width, 0}; }
+        iterator end()   { return {center, width, 6}; }
+    };
+
+    return range{pos, width};
 }
 
 
@@ -215,6 +235,38 @@ public:
         if (in_bounds(pos.south())) f(pos.south());
         if (in_bounds(pos.sw()))    f(pos.sw());
         if (in_bounds(pos.nw()))    f(pos.nw());
+    }
+
+    auto neighbors(qrs pos) {
+        constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
+
+        class iterator {
+            qrs center;
+            int width, i;
+
+            void set() { while (i < 6 && !hex::in_bounds(center + seq[i], width)) i++; }
+
+        public:
+            iterator(qrs center, int width, int i): center(center), width(width), i(i) {
+                ASSERT_MSG(hex::in_bounds(center, width), center << " vs " << width);
+                set();
+            }
+
+            qrs operator*() const { ASSERT_LT(i, 6); return center + seq[i]; }
+
+            iterator &operator++() { ASSERT_LT(i, 6); i++; set(); return *this; }
+
+            bool operator==(const iterator&) const = default;
+        };
+
+        struct range {
+            qrs center;
+            int width;
+            iterator begin() { return {center, width, 0}; }
+            iterator end()   { return {center, width, 6}; }
+        };
+
+        return range{pos, width()};
     }
 
     size_t to_scalar(int q, int r) const { return hex::to_scalar(q, r, width_); }

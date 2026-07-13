@@ -5,6 +5,7 @@
 
 #include <core/test/tests.hpp>
 
+#include <core/hex/grid.hpp>
 #include <core/mathbits.hpp>
 #include <core/entropy.hpp>
 
