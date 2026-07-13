@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Joshua C Marshall
 
-#include "core/entropy.hpp"
+#include <core/entropy.hpp>
 
-#include "core/test/tests.hpp"
+#include <core/test/tests.hpp>
 
 namespace hjx {
 
@@ -223,6 +223,55 @@ DEFINE_TEST(stud) {
     }
 
     test_club(rand);
+}
+
+struct legit_rng {
+    int invoked = 0;
+    legit_rng(uint64_t) {}
+    uint64_t operator()() { invoked++; return 9; }
+};
+
+DEFINE_TEST(permutation) {
+    {
+        permutation<0> perm(6);
+        for (unsigned i : perm) { (void)i; TEST(false); }
+        TEST_THROW(perm());
+    }
+
+    {
+        permutation<4, legit_rng> perm(6);
+
+        TEST_EQ(perm.rng_().invoked, 0);
+        TEST_EQ(perm(), 0);
+        TEST_EQ(perm.rng_().invoked, 1);
+        TEST_EQ(perm(), 1);
+        TEST_EQ(perm.rng_().invoked, 2);
+        TEST_EQ(perm(), 2);
+        TEST_EQ(perm.rng_().invoked, 3);
+        TEST_EQ(perm(), 3);
+        TEST_EQ(perm.rng_().invoked, 4);
+        TEST_THROW(perm());
+    }
+
+    {
+        permutation<3, legit_rng> perm(6);
+
+        for (unsigned i : perm) {
+            TEST_EQ(i, 0);
+            TEST_EQ(perm.rng_().invoked, 1);
+            break;
+        }
+
+        TEST_EQ(perm.rng_().invoked, 1);
+    }
+
+    {
+        permutation<3, legit_rng> perm(6);
+        TEST_EQ(perm(), 0);
+        unsigned t = 1;
+        for (unsigned i : perm) TEST_EQ(i, t++);
+        TEST_THROW(perm());
+    }
 }
 
 }

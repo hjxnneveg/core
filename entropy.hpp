@@ -64,7 +64,7 @@ class direct_rng {
     uint64_t state_;
 
 public:
-    explicit direct_rng(uint64_t seed=1) noexcept: state_(seed ? seed : 1) {}
+    explicit direct_rng(uint64_t seed=1): state_(seed ? seed : 1) {}
 
     void seed(uint64_t seed) { state_ = seed ? seed : 1; }
     uint64_t state() const { return state_; }
@@ -200,8 +200,7 @@ class uniform_t {
     float storage;
 
 public:
-    constexpr explicit uniform_t(float u)
-        NOTHROW: storage(u) { ASSERT_GE_LT(u, 0, 1); }
+    constexpr explicit uniform_t(float u): storage(u) { ASSERT_GE_LT(u, 0, 1); }
 
     operator float() const { return storage; }
 };
@@ -285,20 +284,20 @@ constexpr uint64_t hash(std::integral auto a, std::integral auto b) {
 
 constexpr uint64_t hash(const std::string_view v) { return hash(v.data(), v.size()); }
 
-// [0, ub)
+// [0..ub)
 constexpr uint32_t scale_seed_32(std::same_as<std::uint64_t> auto seed, uint32_t ub) {
     return (seed >> 32) * ub >> 32;
 }
 
 template <std::integral T>
-inline T randint(auto &&rand, T min, T max) { // [min, max]
+inline T randint(auto &&rand, T min, T max) { // [min..max]
     uint64_t range = uint64_t(max) - uint64_t(min);
     ASSERT_LT(range, 0xffff'ffff);
     return uint64_t(min) + scale_seed_32(rand(), range + 1);
 }
 
 template <std::integral T>
-inline T randidx(auto &&rand, T sz) { // [0, sz-1]
+inline T randidx(auto &&rand, T sz) { // [0..sz)
     ASSERT(sz);
     return randint(std::forward<decltype(rand)>(rand), 0, sz - 1);
 }
@@ -314,6 +313,47 @@ void shuffle(R &&range, auto &&rand) {
     for (auto i = N - 1; i; i--)
         std::ranges::iter_swap(first + i, first + randint(r, decltype(i){0}, i));
 }
+
+
+template <unsigned N, typename RNG=entropy::direct_rng<entropy::xorshift64>>
+class permutation {
+    RNG rand;
+    unsigned progress = 0;
+    std::array<unsigned, N> arr;
+
+public:
+    permutation(uint64_t seed): rand(seed) {
+        std::iota(arr.begin(), arr.end(), 0);
+    }
+
+    unsigned operator()() {
+        ASSERT_LT(progress, N);
+        unsigned i = randint(rand, progress, N-1);
+        std::swap(arr[progress], arr[i]);
+        return arr[progress++];
+    }
+
+    // fragile and destructive, just my ty^H^H^H^H^H^H^H^H^H^Hfor range-based loops
+    struct iterator {
+        permutation *perm;
+
+        unsigned operator*() {
+            unsigned ret = (*perm)();
+            if (perm->progress == N) perm = nullptr;
+            return ret;
+        }
+
+        iterator &operator++() { return *this; }
+
+        bool operator==(const iterator&) const = default;
+    };
+
+    iterator begin() { return {progress < N ? this : nullptr}; }
+    iterator end() { return {nullptr}; }
+
+    auto &rng_() { return rand; }
+};
+
 
 inline uint64_t new_seed() {
     std::random_device rd;
