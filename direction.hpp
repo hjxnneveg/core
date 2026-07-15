@@ -17,7 +17,7 @@ enum class direction : uint8_t {
     end = 7
 };
 
-constexpr bool valid(direction d) noexcept { return d < direction::end; }
+constexpr bool valid(direction d) { return d < direction::end; }
 
 //           -----           //
 //          /     \          //
@@ -32,6 +32,10 @@ constexpr bool valid(direction d) noexcept { return d < direction::end; }
 //     -----   4   -----     //
 //          \     /          //
 //           -----           //
+
+constexpr direction clockwise_vert(direction d) {
+    return direction((0x2465130 >> (uint32_t(d) << 2)) & 7);
+}
 
 inline std::ostream &operator<<(std::ostream &os, direction d) {
     switch (d) {

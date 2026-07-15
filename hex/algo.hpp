@@ -28,6 +28,46 @@ constexpr bool in_bounds(qrs pos, uint16_t width) {
     return in_bounds(pos.q(), pos.r(), width);
 }
 
+inline void foreach(uint16_t width, std::invocable<qrs> auto &&f) {
+    ASSERT_MSG(width & 1, "non-odd width " << width);
+    float len = width/2;
+
+    for (float q = -len; q < 0; q++)
+        for (float s = len; s >= -len - q; s--)
+            f(qrs{q, -q-s});
+
+    for (float q = 0; q <= len; q++)
+        for (float r = -len; r <= len - q; r++)
+            f(qrs{q, r});
+}
+
+inline void foreach_neighbor(qrs pos, uint16_t width, auto &&f) {
+    ASSERT_MSG(pos.integral(), pos);
+
+    if (in_bounds(pos.north(), width)) f(pos.north());
+    if (in_bounds(pos.ne(),    width)) f(pos.ne());
+    if (in_bounds(pos.se(),    width)) f(pos.se());
+    if (in_bounds(pos.south(), width)) f(pos.south());
+    if (in_bounds(pos.sw(),    width)) f(pos.sw());
+    if (in_bounds(pos.nw(),    width)) f(pos.nw());
+}
+
+// rotate clockwise on even edgelen
+constexpr qrs edge_midpoint(direction d, uint16_t width) {
+    ASSERT_MSG(width & 1, "non-odd " << width);
+    uint16_t maxidx = width / 2;
+
+    switch (d) {
+    case EAST: return qrs(  maxidx,           -maxidx / 2     );
+    case SE:   return qrs(  maxidx / 2,       (maxidx + 1) / 2);
+    case SW:   return qrs(-(maxidx + 1) / 2,   maxidx         );
+    case WEST: return qrs( -maxidx,            maxidx / 2     );
+    case NW:   return qrs( -maxidx / 2,      -(maxidx + 1) / 2);
+    case NE:   return qrs( (maxidx + 1) / 2,  -maxidx         );
+    default: ASSERT_MSG(false, "bad dir " << int(d));
+    }
+}
+
 
 template <unsigned N>
 std::array<qrs, N> find_greatest(uint16_t width, auto &&gt) {
@@ -152,19 +192,18 @@ bool wendy_tunnel(auto &&rand, qrs from, qrs to, int width,
             if (!ok(candidate)) continue;
 
             float candist = square_dist(candidate, to);
+            if (candist >= cur_dist) continue;
 
-            if (candist < cur_dist) {
-                if (candist < best) {
-                    frontrunner = candidate;
-                    best = candist;
-                    continue;
-                }
-
-                from = candidate;
-                progress = true;
-                cb(from);
-                break;
+            if (candist < best) {
+                frontrunner = candidate;
+                best = candist;
+                continue;
             }
+
+            from = candidate;
+            progress = true;
+            cb(from);
+            break;
         }
 
         if (!progress) {

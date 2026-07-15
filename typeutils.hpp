@@ -10,6 +10,8 @@
 
 namespace hjx {
 
+#define FWD(name) std::forward<decltype(name)>(name)
+
 #define IS_CALLABLE(f, T) IS_CALLABLE_DEF(f).operator()<T>()
 
 #define IS_CALLABLE_DEF(f) \

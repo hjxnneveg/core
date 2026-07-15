@@ -95,10 +95,7 @@ struct xy : coords {
 
     constexpr float radians() const { return std::atan2(y(), x()); }
 
-    constexpr xy normalize() const {
-        ASSERT_MSG(abs() > 0 && std::isnormal(abs()), *this);
-        return *this * (1.f / abs());
-    }
+    constexpr xy normalize() const;
 
     constexpr float dot(const xy &o) const { return x() * o.x() + y() * o.y(); }
 
@@ -111,8 +108,6 @@ struct xy : coords {
     constexpr xy operator-(const xy &o) const { return {x() - o.x(), y() - o.y()}; }
 
     constexpr xy operator-() const { return {-x(), -y()}; }
-
-    constexpr xy operator*(const auto &v) const { return {x() * v, y() * v}; }
 
     constexpr xy operator/(const auto &v) const {
         ASSERT(v);
@@ -131,7 +126,14 @@ struct xy : coords {
     }
 };
 
-constexpr xy operator*(const auto &val, xy c) { return c * val; }
+constexpr xy operator*(xy p, const auto &v) { return {p.x() * v, p.y() * v}; }
+constexpr xy operator*(const auto &v, xy p) { return p * v; }
+constexpr xy operator*(xy, xy) = delete;
+
+constexpr xy xy::normalize() const {
+    ASSERT_MSG(abs() > 0 && std::isnormal(abs()), *this);
+    return *this * (1.f / abs());
+}
 
 struct polar {
     float r;
@@ -175,7 +177,7 @@ struct qrs : coords {
         case direction::south: *this = south_unit(); break;
         case direction::sw:    *this = sw_unit();    break;
         case direction::nw:    *this = nw_unit();    break;
-        default: ERROR("bad direction " << int(d));
+        default: ASSERT_MSG(false, "bad direction " << int(d));
         }
     }
 
@@ -292,6 +294,10 @@ struct qrs : coords {
 
     constexpr qrs rotate_r(unsigned n=1) const { return rotate_l(6 - n); }
 
+    // increases magnitude by √3
+    // integral stays integral
+    constexpr qrs clockwise30_wide() const { return {q() - r(), r() - s()}; }
+
     qrs snap() const {
         const qrs candidates[4] = {
             qrs(ceilf (q()), ceilf (r())),
@@ -389,21 +395,22 @@ inline float manhattan_dist(qrs a, qrs b) {
     return (abs(a.q() - b.q()) + abs(a.r() - b.r()) + abs(a.s() - b.s())) / 2;
 }
 
-inline qrs to_qrsi(float x, float y) {
-    constexpr float qscale = 2 / math::sqrt3; // 1 / (1.5 * edgelen)
+inline qrs to_qrsi(const qrs &pos) {
+    float q = std::lround(pos.q());
+    float r = std::lround(pos.r());
+    float s = std::lround(pos.s());
 
-    float qf = x * qscale;
-    float rf = y - 0.5f * qf;
-    float sf = -qf - rf;
+    float dq = std::abs(q - pos.q());
+    float dr = std::abs(r - pos.r());
+    float ds = std::abs(s - pos.s());
 
-    float q = std::round(qf), r = std::round(rf), s = std::round(sf);
-    float dq = std::abs(q - qf), dr = std::abs(r - rf), ds = std::abs(s - sf);
-
-    if      (dq > dr && dq > ds) q = -r - s;
-    else if (dr > ds)            r = -q - s;
+    if (dq > dr && dq > ds) q = -r - s;
+    else if (dr > ds)       r = -q - s;
     // ds largest: q, r already correct
 
     return {q, r};
 }
+
+inline qrs to_qrsi(xy p) { return to_qrsi(qrs{p}); }
 
 }

@@ -34,6 +34,15 @@ DEFINE_TEST(direction) {
                 direction::ne);
 }
 
+DEFINE_TEST(rotation) {
+    TEST_EQ(clockwise_vert(EAST), SE);
+    TEST_EQ(clockwise_vert(SE),   SW);
+    TEST_EQ(clockwise_vert(SW),   WEST);
+    TEST_EQ(clockwise_vert(WEST), NW);
+    TEST_EQ(clockwise_vert(NW),   NE);
+    TEST_EQ(clockwise_vert(NE),   EAST);
+}
+
 }
 
 int main(int, const char *argv[]) {

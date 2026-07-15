@@ -90,29 +90,6 @@ constexpr qrs scalar_to_qrs(size_t n, uint16_t width) {
     return {q, r};
 }
 
-void foreach(uint16_t width, std::invocable<qrs> auto &&f) {
-    float len = width/2;
-
-    for (float q = -len; q < 0; q++)
-        for (float s = len; s >= -len - q; s--)
-            f(qrs{q, -q-s});
-
-    for (float q = 0; q <= len; q++)
-        for (float r = -len; r <= len - q; r++)
-            f(qrs{q, r});
-}
-
-void foreach_neighbor(qrs pos, uint16_t width, auto &&f) {
-    ASSERT_MSG(pos.integral(), pos);
-
-    if (in_bounds(pos.north(), width)) f(pos.north());
-    if (in_bounds(pos.ne(),    width)) f(pos.ne());
-    if (in_bounds(pos.se(),    width)) f(pos.se());
-    if (in_bounds(pos.south(), width)) f(pos.south());
-    if (in_bounds(pos.sw(),    width)) f(pos.sw());
-    if (in_bounds(pos.nw(),    width)) f(pos.nw());
-}
-
 inline auto neighbors(qrs pos, int width) {
     constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
 
@@ -237,7 +214,7 @@ public:
         if (in_bounds(pos.nw()))    f(pos.nw());
     }
 
-    auto neighbors(qrs pos) {
+    auto neighbors(qrs pos) { // fixme - duplication
         constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
 
         class iterator {
