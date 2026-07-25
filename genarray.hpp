@@ -14,8 +14,9 @@ namespace hjx {
 class genid {
 public:
     // [----] [----] [----] [----] [----] [----] [----] [----]
-    // [generation        ] [TBD ] [nonzero index            ]
+    // [zero] [generation        ] [nonzero index            ]
     //
+    // zero high byte for bit games
     // generation is odd for every issued id (see genarray)
 
     static constexpr uint32_t GEN_MAX = 0xff'ffff;
@@ -23,8 +24,8 @@ public:
 private:
     uint64_t storage = 0;
 
-    genid(uint32_t index, uint32_t gen): storage(uint64_t(gen) << 40 | index) {
-        ASSERT(index);
+    genid(uint32_t index, uint32_t gen): storage(uint64_t(gen) << 32 | index) {
+        ASSERT_LE(index, 0xffff'ffff);
         ASSERT_LE(gen, GEN_MAX);
     }
 
@@ -36,14 +37,15 @@ public:
     explicit operator bool() const { return storage; }
     friend bool operator==(genid, genid) = default;
 
-    uint32_t index() const { return storage & 0xffff'ffff; }
+    uint32_t index() const { return storage; }
 
     uint32_t generation() const {
         ASSERT(*this);
-        return storage >> 40;
+        return storage >> 32;
     }
 
-    uint64_t raw() const { return storage; }
+    const uint64_t &raw() const { return storage; }
+    uint64_t &raw() { return storage; }
 
     friend ostream &operator<<(ostream &os, genid id) {
         if (!id) return os << "[genid nil]";
@@ -182,6 +184,8 @@ public:
 
         return true;
     }
+
+    //genid to_id(const T *p) const;
 
     template <bool Const>
     class iter {

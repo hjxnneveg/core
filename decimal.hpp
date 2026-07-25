@@ -113,7 +113,7 @@ struct decimal {
 
         auto whole = x.parse_uint();
         if (whole) {
-            if (*whole > int64max / scale) return {};
+            if (*whole > std::numeric_limits<int64_t>::max() / scale) return {};
             value = static_cast<int64_t>(*whole) * scale;
             digits = true;
         }

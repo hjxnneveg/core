@@ -28,17 +28,9 @@ inline constexpr size_t bitlength = 8 * sizeof(T);
 static_assert(std::endian::native == std::endian::big ||
               std::endian::native == std::endian::little);
 
-constexpr bool little_endian() noexcept {
+constexpr bool little_endian() {
     return std::endian::native == std::endian::little;
 }
-
-constexpr uint64_t uint64max = 0xffff'ffff'ffff'ffff;
-constexpr  int64_t  int64max = 0x7fff'ffff'ffff'ffff;
-constexpr  int64_t  int64min = 0x8000'0000'0000'0000;
-
-constexpr uint32_t uint32max = 0xffff'ffff;
-constexpr  int32_t  int32max = 0x7fff'ffff;
-constexpr  int32_t  int32min = 0x8000'0000;
 
 constexpr double inf = std::numeric_limits<double>::infinity();
 
@@ -49,12 +41,12 @@ using phony_uint = std::conditional_t<sizeof(T) == 1, uint8_t,
                    std::conditional_t<sizeof(T) == 8, uint64_t, void>>>>;
 
 template<trivially_copyable T>
-constexpr phony_uint<T> to_uint(const T &v) noexcept {
+constexpr phony_uint<T> to_uint(const T &v) {
     return std::bit_cast<phony_uint<T>>(v);
 }
 
 template <std::integral T>
-T byteswap(T v) noexcept {
+T byteswap(T v) {
     for (unsigned i = 0; i < sizeof(T) / 2; i++) {
         uint8_t *p = reinterpret_cast<uint8_t*>(&v);
         std::swap(*(p + i), *(p + sizeof(T) - 1 - i));
@@ -64,10 +56,10 @@ T byteswap(T v) noexcept {
 }
 
 template <std::integral T>
-T little_endianize(T v) noexcept { return little_endian() ? v : byteswap(v); }
+T little_endianize(T v) { return little_endian() ? v : byteswap(v); }
 
 template <std::integral T>
-T big_endianize(T v) noexcept { return little_endian() ? byteswap(v) : v; }
+T big_endianize(T v) { return little_endian() ? byteswap(v) : v; }
 
 template <typename T>
 constexpr phony_uint<T> leftmost_bit =
@@ -132,21 +124,29 @@ constexpr uint32_t fbits(float x) { return std::bit_cast<uint32_t>(x); }
 
 namespace nan {
 
-constexpr uint32_t quiet_bits = 0x7fc0'0000;
-constexpr uint32_t payload_mask = 0x003f'ffff;
+constexpr uint32_t exp_bits           = 0x7f80'0000;
+constexpr uint32_t quiet_bits         = 0x7fc0'0000;
+constexpr uint32_t quiet_payload_mask = 0x003f'ffff;
+constexpr uint32_t full_payload_mask  = 0x007f'ffff;
 
 static_assert(std::numeric_limits<float>::has_quiet_NaN);
 static_assert(std::bit_cast<uint32_t>(std::numeric_limits<float>::quiet_NaN())
               == quiet_bits);
 
-constexpr float make(unsigned payload=0) NOTHROW {
-    ASSERT_LE(payload, payload_mask);
+constexpr float make(unsigned payload=0) {
+    ASSERT_LE(payload, quiet_payload_mask);
     return std::bit_cast<float>(uint32_t(quiet_bits | payload));
 }
 
-constexpr unsigned payload(float nan) NOTHROW {
+constexpr bool is(float x) {
+    // don't use std::isnan, which is optimized away by -ffinite-math-only
+    uint32_t u = to_uint(x);
+    return (u & exp_bits) == exp_bits && (u & full_payload_mask);
+}
+
+constexpr unsigned payload(float nan) {
     ASSERT_MSG(std::isnan(nan), frepr(nan));
-    return std::bit_cast<uint32_t>(nan) & payload_mask;
+    return std::bit_cast<uint32_t>(nan) & quiet_payload_mask;
 }
 
 }
@@ -158,16 +158,19 @@ struct interval {
     float min;
     float max;
 
-    interval(float min, float max) noexcept: min(min), max(max) {}
+    interval(float min, float max): min(min), max(max) {}
 
-    float length() const noexcept { return max - min; }
-    bool proper() const noexcept { return max >= min; }
-    interval flip() const noexcept { return interval{max, min}; }
+    float length() const { return max - min; }
+    bool proper() const { return max >= min; }
+    interval flip() const { return interval{max, min}; }
 
     friend ostream &operator<<(ostream &os, interval v) {
         return os << "[" << honest_float(v.min) << ", " << honest_float(v.max) << "]";
     }
 };
+
+static_assert(std::is_nothrow_move_constructible_v<interval>);
+
 
 class affine_map {
     interval from;
@@ -176,17 +179,17 @@ class affine_map {
     float scale;
 
 public:
-    affine_map(interval from, interval to) noexcept:
+    affine_map(interval from, interval to):
         from(from.proper() ? from : from.flip()),
         to(from.proper() ? to : to.flip()),
         mid(std::midpoint(from.min, from.max)),
         scale((to.max - to.min) / (from.max - from.min)) {}
 
-    bool valid() const noexcept {
+    bool valid() const {
         return std::isfinite(scale) && mid != from.min && mid != from.max;
     }
 
-    float operator()(float x) const NOTHROW {
+    float operator()(float x) const {
         ASSERT_MSG(valid(), "invalid " << *this);
         float af = x >= mid ? from.max : from.min;
         float at = x >= mid ? to.max : to.min;
@@ -206,7 +209,7 @@ constexpr float sqrt2 = std::numbers::sqrt2;
 constexpr float sqrt3 = std::numbers::sqrt3;
 constexpr float pi = std::numbers::pi;
 
-constexpr auto abs(std::signed_integral auto x) NOTHROW {
+constexpr auto abs(std::signed_integral auto x) {
     using T = decltype(x);
     ASSERT_NE(x, std::numeric_limits<T>::min());
     T mask = x >> std::numeric_limits<T>::digits;
@@ -214,17 +217,17 @@ constexpr auto abs(std::signed_integral auto x) NOTHROW {
 }
 
 
-constexpr auto abs(std::unsigned_integral auto x) noexcept { return x; }
+constexpr auto abs(std::unsigned_integral auto x) { return x; }
 
 template <arithmetic T, arithmetic M>
-constexpr T mod(T a, M m) NOTHROW {
+constexpr T mod(T a, M m) {
     ASSERT_GT(m, 0);
     T t = a % m;
     return t < 0 ? t + m : t;
 }
 
 template <arithmetic T, arithmetic M>
-constexpr T add_mod(T a, M m) NOTHROW {
+constexpr T add_mod(T a, M m) {
     ASSERT_GE(a, 0);
     ASSERT_GT(m, 0);
     return a < m ? a : a - m;
@@ -258,18 +261,18 @@ constexpr float min_normal_32 = std::bit_cast<float>(mantissa_mask_32 + 1);
 constexpr float max_denorm_32 = std::bit_cast<float>(mantissa_mask_32);
 
 // (-inf, inf) ↦ (-1.0, 1.0)
-constexpr double frac(double x) NOTHROW {
+constexpr double frac(double x) {
     // todo - IF_ASSERTS_ON(WARN_IF(isdenorm(x)));
-    ASSERT_GE(x, int64min);
-    ASSERT_LE(x, int64max);
+    ASSERT_GE(x, std::numeric_limits<int64_t>::min());
+    ASSERT_LE(x, std::numeric_limits<int64_t>::max());
     return x - int64_t(x);
 }
 
-constexpr uint64_t d2b(std::same_as<double> auto x) noexcept {
+constexpr uint64_t d2b(std::same_as<double> auto x) {
     return std::bit_cast<uint64_t>(x);
 }
 
-constexpr double b2d(std::same_as<uint64_t> auto z) noexcept {
+constexpr double b2d(std::same_as<uint64_t> auto z) {
     return std::bit_cast<double>(z);
 }
 
@@ -283,17 +286,17 @@ constexpr double b2d(std::same_as<uint64_t> auto z) noexcept {
 // -1023 ↤ 2.2250738585072009e-308  000f'ffff'ffff'ffff  ⌈denorm⌉
 // -1023 ⇆ 0.0                      0000'0000'0000'0000
 
-constexpr uint64_t encexp_(int64_t n) noexcept { return (n + 1023) << 52; }
-constexpr int64_t decexp_(uint64_t z) noexcept { return (z >> 52) - 1023; }
+constexpr uint64_t encexp_(int64_t n) { return (n + 1023) << 52; }
+constexpr int64_t decexp_(uint64_t z) { return (z >> 52) - 1023; }
 
 // [-1023..1024] ↦ [0.0, inf]
-constexpr double zpow2(int64_t n) NOTHROW {
+constexpr double zpow2(int64_t n) {
     ASSERT_GE_LE(n, -1023, 1024);
     return b2d(encexp_(n));
 }
 
 // [0.0, inf] ↦ [-1023..1024]
-constexpr int64_t zlog2(double x) NOTHROW {
+constexpr int64_t zlog2(double x) {
     ASSERT_GE(x, 0);
     return decexp_(d2b(x));
 }
@@ -304,7 +307,7 @@ constexpr int64_t zlog2(double x) NOTHROW {
 // never underestimates on [-1022, 1024]
 // collapses to ~0 on [-1023, -1022)
 // https://www.desmos.com/calculator/3dvgxcnffg
-constexpr double azpow2(double x) NOTHROW {
+constexpr double azpow2(double x) {
     ASSERT_GE_LE(x, -1023, 1024);
     return b2d(encexp_(x) + int64_t(frac(x) * double(mantissa_mask_64 + 1)));
 }
@@ -312,7 +315,7 @@ constexpr double azpow2(double x) NOTHROW {
 // [0.0, inf] ↦ [-1023, 1024]
 // never overestimates
 // https://www.desmos.com/calculator/0gqawniv9g
-constexpr double azlog2(double x) NOTHROW {
+constexpr double azlog2(double x) {
     ASSERT_GE(x, 0);
     uint64_t bits = d2b(x);
     constexpr double factor = 1.0 / (mantissa_mask_64 + 1);
@@ -363,14 +366,14 @@ inline float bilinear_pow_inv(float y, float k) {
 // consider fp degeneracy
 // maybe flip things around
 template <auto k=0.5f>
-constexpr float squircle(float x) NOTHROW {
+constexpr float squircle(float x) {
     ASSERT_GE_LE(x, 0, 1);
     ASSERT_GE_LE(k, -1, 1);
     constexpr float p = std::sqrt((1 - k) / (1 + k));
     return 1 - std::pow(1 - std::pow(x, p), 1 / p);
 }
 
-constexpr float squircle(float x, float k=0.5) NOTHROW {
+constexpr float squircle(float x, float k=0.5) {
     ASSERT_GE_LE(x, 0, 1);
     ASSERT_GE_LE(k, -1, 1);
     float p = std::sqrt((1 - k) / (1 + k));
@@ -390,7 +393,7 @@ inline std::ostream &dump_uint128(std::ostream &os, __uint128_t n) {
 }
 
 // i*numer/denom with overflow avoidance
-constexpr uint64_t scale(uint64_t i, uint64_t numer, uint64_t denom) NOTHROW {
+constexpr uint64_t scale(uint64_t i, uint64_t numer, uint64_t denom) {
     ASSERT(denom != 0);
 
     __uint128_t i128 = i;
@@ -417,7 +420,7 @@ constexpr uint64_t scale(uint64_t i, uint64_t numer, uint64_t denom) NOTHROW {
 /// do we want dim_sum?
 
 constexpr double amp_sum(double a, double b,
-                         multiplier amp = multiplier{1}) NOTHROW {
+                         multiplier amp = multiplier{1}) {
     ASSERT_GE(a, 0);
     ASSERT_GE(b, 0);
     ASSERT_GE(amp, 0);
@@ -429,7 +432,7 @@ constexpr double amp_sum(double a, double b,
 
 // quadratic; more extreme, cheaper, sensitive to 0
 constexpr double amp_sum(double a, double b, double c,
-                         multiplier amp = multiplier{1}) NOTHROW {
+                         multiplier amp = multiplier{1}) {
     ASSERT_GE(a, 0);
     ASSERT_GE(b, 0);
     ASSERT_GE(c, 0);
@@ -442,7 +445,7 @@ constexpr double amp_sum(double a, double b, double c,
 
 // linear; less extreme, more expensive, less sensitive to 0
 constexpr double amp_sum_ex(double a, double b, double c,
-                            multiplier amp = multiplier{1}) NOTHROW {
+                            multiplier amp = multiplier{1}) {
     ASSERT_GE(a, 0);
     ASSERT_GE(b, 0);
     ASSERT_GE(c, 0);
@@ -454,13 +457,13 @@ constexpr double amp_sum_ex(double a, double b, double c,
 }
 
 template <std::unsigned_integral T>
-constexpr T round_up(T value, T multiple) NOTHROW {
+constexpr T round_up(T value, T multiple) {
     ASSERT_GT(multiple, 0);
     return (value + (multiple - 1)) / multiple * multiple;
 }
 
 template <std::unsigned_integral T>
-constexpr T round_down(T value, T multiple) NOTHROW {
+constexpr T round_down(T value, T multiple) {
     ASSERT_GT(multiple, 0);
     return value / multiple * multiple;
 }

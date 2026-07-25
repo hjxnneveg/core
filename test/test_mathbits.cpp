@@ -248,8 +248,8 @@ DEFINE_TEST(math) {
     test_abs(uint16_t(-1), uint16_t(-1));
     test_abs(uint8_t(-1), uint8_t(-1));
 
-    TEST_THROW(abs(int64min));
-    TEST_THROW(abs(int32min));
+    TEST_THROW(abs(std::numeric_limits<int64_t>::min()));
+    TEST_THROW(abs(std::numeric_limits<int32_t>::min()));
 
     TEST_EQ(mod(3, 2), 1);
     TEST_EQ(mod(-3, 2), 1);
@@ -311,6 +311,37 @@ DEFINE_TEST(math) {
     TEST_EQ(squircle(0,    1), 1);
     TEST_EQ(squircle(0.5,  1), 1);
     TEST_EQ(squircle(1,    1), 1);
+}
+
+DEFINE_TEST(nan) {
+    TEST(std::isnan(nan::make()));
+    TEST(std::isnan(nan::make(1)));
+    TEST(std::isnan(nan::make(0x003f'ffff)));
+    TEST_THROW(nan::make(0x0040'0000));
+
+    TEST(nan::is(nan::make()));
+    TEST(nan::is(nan::make(1)));
+    TEST(nan::is(nan::make(0x003f'ffff)));
+    TEST(nan::is(std::nan("")));
+    TEST(nan::is(std::nan("why the hell is this a string?")));
+
+#ifdef TEST_ALL_REPRESENTATIONS
+    for (uint64_t i = 0; i <= 0xffff'ffff; i++) {
+        float x = std::bit_cast<float>(uint32_t(i));
+        TEST_EQ(std::isnan(x), nan::is(x));
+    }
+#else
+    rand_t rand(test::harness::seed());
+
+    for (int i = 0; i < 999'999; i++) {
+        float x = std::bit_cast<float>(uint32_t(rand()));
+        TEST_EQ(std::isnan(x), nan::is(x));
+    }
+#endif
+
+    TEST_EQ(nan::payload(nan::make()), 0);
+    TEST_EQ(nan::payload(nan::make(1)), 1);
+    TEST_EQ(nan::payload(nan::make(0x003f'ffff)), 0x003f'ffff);
 }
 
 DEFINE_TEST(phony_uint) {

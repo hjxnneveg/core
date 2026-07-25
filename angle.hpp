@@ -53,6 +53,9 @@ public:
     constexpr float deg() const { return deg_; }
     constexpr float rad() const { return deg() * (pi / 180); }
 
+    constexpr float cos() const { return std::cos(rad()); }
+    constexpr float sin() const { return std::sin(rad()); }
+
     auto unit() const {
         struct { float x, y; } vec{std::cos(rad()), std::sin(rad())};
         return vec;
@@ -86,6 +89,8 @@ public:
         return os << honest_float(a.deg()) << "°";
     }
 };
+
+static_assert(std::is_nothrow_move_constructible_v<angle>);
 
 consteval angle operator ""_deg(long double d) {
     ASSERT_LE(d, 360);

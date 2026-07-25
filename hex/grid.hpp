@@ -152,7 +152,7 @@ public:
     }
 
     bool in_bounds(int q, int r) const {
-        return in_bounds(q, r, width_);
+        return hex::in_bounds(q, r, width_);
     }
 
     void assert_in_bounds(qrs pos) const {
