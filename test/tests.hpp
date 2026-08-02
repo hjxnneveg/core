@@ -40,7 +40,7 @@
         try {                                   \
             std::ostringstream ss;              \
             auto_err MKVARNAME(_)(ss, false);   \
-            __VA_ARGS__;                        \
+            (void)(__VA_ARGS__);                \
         }                                       \
         catch (...) { fail = true; }            \
         TEST(fail);                             \

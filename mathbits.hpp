@@ -106,7 +106,14 @@ inline std::string frepr(T x, bool bits=false) {
 
     std::ostringstream ss;
     repr_t rep = std::bit_cast<repr_t>(x);
-    ss << x << " [" << hexos() << rep;
+
+    // fixme for double
+    if constexpr (std::same_as<T, float>)
+        ss << honest_float{x};
+    else
+        ss << x;
+
+    ss <<  " [" << hexos() << rep;
 
     if (bits) {
         for (int i = numbits - 1; i >= 0; i--) {
@@ -165,7 +172,7 @@ struct interval {
     interval flip() const { return interval{max, min}; }
 
     friend ostream &operator<<(ostream &os, interval v) {
-        return os << "[" << honest_float(v.min) << ", " << honest_float(v.max) << "]";
+        return os << "[" << honest_float{v.min} << ", " << honest_float{v.max} << "]";
     }
 };
 
@@ -199,8 +206,8 @@ public:
     friend ostream &operator<<(ostream &os, const affine_map &map) {
         os << map.from << "↦" << map.to;
         if (!map.valid())
-            os << " mid: " << honest_float(map.mid)
-               << " scale: " << honest_float(map.scale);
+            os << " mid: " << honest_float{map.mid}
+               << " scale: " << honest_float{map.scale};
         return os;
     }
 };

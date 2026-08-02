@@ -61,7 +61,20 @@ namespace cmp {
         return std::cmp(a, b);                                                  \
     }                                                                           \
                                                                                 \
+    constexpr bool name(const small_integral_ auto &a,                          \
+                        const std::same_as<float> auto &b) {                    \
+        return double(a) op b;                                                  \
+    }                                                                           \
+                                                                                \
+    constexpr bool name(const std::same_as<float> auto &a,                      \
+                        const small_integral_ auto &b) {                        \
+        return a op double(b);                                                  \
+    }                                                                           \
+                                                                                \
     constexpr bool name(const auto &a, const auto &b) { return a op b; }
+
+template <class T>
+concept small_integral_ = standard_integral<T> && sizeof(T) <= 32;
 
 CMP_FUNC_(eq, cmp_equal, ==)
 CMP_FUNC_(ne, cmp_not_equal, !=)

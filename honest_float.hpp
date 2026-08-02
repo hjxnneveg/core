@@ -6,8 +6,10 @@
 #include "reporting.hpp"
 
 #include <charconv>
+#include <limits>
 #include <ostream>
 #include <string_view>
+#include <system_error>
 
 namespace hjx {
 
@@ -18,7 +20,8 @@ class honest_float {
 public:
     constexpr honest_float(float x): storage(x) {}
 
-    honest_float(std::string_view s) {
+    explicit honest_float(std::string_view s) {
+        storage = std::numeric_limits<float>::quiet_NaN();
         IF_ASSERTS_ON(auto [ptr, ec] =)
             std::from_chars(s.data(), s.data() + s.size(), storage);
         ASSERT_MSG(ec == std::errc{}, s);
@@ -28,7 +31,7 @@ public:
     constexpr operator float() const { return storage; }
 
     friend std::ostream &operator<<(std::ostream &os, honest_float x) {
-        char buf[16];
+        char buf[20];
         auto [ptr, ec] = std::to_chars(buf, buf + 15, x.storage);
         ASSERT(ec == std::errc{});
         ASSERT_LE((void*)ptr, (void*)&buf[15]);
