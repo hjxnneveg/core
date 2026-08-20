@@ -290,17 +290,30 @@ constexpr uint32_t scale_seed_32(std::same_as<std::uint64_t> auto seed, uint32_t
 }
 
 template <std::integral T>
-inline T randint(auto &&rand, T min, T max) { // [min..max]
+T randint(uint64_t seed, T min, T max) { // [min..max]
     uint64_t range = uint64_t(max) - uint64_t(min);
     ASSERT_LT(range, 0xffff'ffff);
-    return uint64_t(min) + scale_seed_32(rand(), range + 1);
+    return uint64_t(min) + scale_seed_32(seed, range + 1);
 }
 
 template <std::integral T>
-inline T randidx(auto &&rand, T sz) { // [0..sz)
-    ASSERT(sz);
-    return randint(std::forward<decltype(rand)>(rand), 0, sz - 1);
+T randint(auto &&rand, T min, T max) { // [min..max]
+    return randint(rand(), min, max);
 }
+
+template <std::integral T>
+T randidx(uint64_t seed, T sz) { // [0..sz)
+    ASSERT_GT(sz, 0);
+    return randint(seed, T(0), sz - 1);
+}
+
+template <std::integral T>
+T randidx(auto &&rand, T sz) { // [0..sz)
+    return randidx(rand(), sz);
+}
+
+#define RANDELEM(rand, a) (a)[randidx((rand)(), countof(a))]
+
 
 template <std::ranges::random_access_range R>
 requires std::permutable<std::ranges::iterator_t<R>>
