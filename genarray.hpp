@@ -24,15 +24,15 @@ public:
 private:
     uint64_t storage = 0;
 
-    genid(uint32_t index, uint32_t gen): storage(uint64_t(gen) << 32 | index) {
-        ASSERT_LE(index, 0xffff'ffff);
-        ASSERT_LE(gen, GEN_MAX);
-    }
-
     template <typename T> friend class genarray;
 
 public:
     genid() = default;
+
+    genid(uint32_t index, uint32_t gen): storage(uint64_t(gen) << 32 | index) {
+        ASSERT(index);
+        ASSERT_LE(gen, GEN_MAX);
+    }
 
     explicit operator bool() const { return storage; }
     friend bool operator==(genid, genid) = default;
@@ -68,6 +68,8 @@ namespace hjx {
 //
 // The freelist is FIFO to spread reuse evenly.  Slot 0 is reserved for nil.  A slot
 // whose generation reaches GEN_MAX is retired.
+
+// consider LIFO for caching
 
 template <typename T>
 class genarray {
