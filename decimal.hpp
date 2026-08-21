@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "archive.hpp"
 #include "honest_float.hpp"
 #include "utf.hpp"
 #include "reporting.hpp"
@@ -58,13 +59,13 @@ struct decimal {
     constexpr static Rep fix(float x) {
         if (std::isnan(x)) return nil_repr;
         x = std::round(x * scale);
-        if (x >= min_repr && x <= max_repr) return static_cast<Rep>(x);
+        if (x >= min_repr && x <= max_repr) return Rep(x);
         return nil_repr;
     }
 
     constexpr static float unfix(Rep v) {
         if (v == nil_repr) return nan::make();
-        return static_cast<float>(v) / scale;
+        return float(v) / scale;
     }
 
     Rep storage;
@@ -81,6 +82,11 @@ struct decimal {
 
     constexpr honest_float get() const { return unfix(storage); }
 
+    constexpr Rep raw() const { return storage; }
+
+    // consider math
+    constexpr operator float() const { return unfix(storage); }
+
     constexpr bool valid() const { return storage != nil_repr; }
     constexpr bool nilp() const { return storage == nil_repr; }
 
@@ -93,6 +99,14 @@ struct decimal {
         if (nilp() || o.nilp()) return std::partial_ordering::unordered;
         if (storage < o.storage) return std::partial_ordering::less;
         return std::partial_ordering::greater;
+    }
+
+    friend constexpr bool operator==(decimal d, const auto &x) { return unfix(d) == x; }
+    friend constexpr auto operator<=>(decimal d, const auto &x) { return unfix(d) <=> x; }
+
+    constexpr decimal operator-() const requires std::is_signed_v<Rep> {
+        ASSERT(valid());
+        return from_repr(-storage);
     }
 
     static constexpr decimal min() { return from_repr(min_repr); }
@@ -139,13 +153,20 @@ struct decimal {
         return parse(x);
     }
 
+    static void serialize(archive &a, const decimal &v) { a.put(v.storage); }
+
+    static decimal deserialize(auto &x) { return from_repr(x.template get<Rep>()); }
+
+    // testme
     friend std::ostream &operator<<(std::ostream &os, decimal v) {
         if (v.nilp()) return os << "nil";
         return os << v.get();
     }
 };
 
-using udec16 = decimal<uint16_t, 1>; // [0, 6553.4]
-using cent16 = decimal<int16_t,  2>; // [-327.67, 327.67]
+using dec8    = decimal<uint8_t,  1>; // [-12.7..12.7]
+using udec16  = decimal<uint16_t, 1>; // [0..6553.4]
+using ucent16 = decimal<int16_t,  2>; // [-327.67..327.67]
+using cent16  = decimal<int16_t,  2>; // [0..655.34]
 
 }
