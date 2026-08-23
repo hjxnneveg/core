@@ -41,15 +41,73 @@ inline void foreach(uint16_t width, std::invocable<qrs> auto &&f) {
             f(qrs{q, r});
 }
 
-inline void foreach_neighbor(qrs pos, uint16_t width, auto &&f) {
-    ASSERT_MSG(pos.integral(), pos);
+namespace detail {
 
-    if (in_bounds(pos.north(), width)) f(pos.north());
-    if (in_bounds(pos.ne(),    width)) f(pos.ne());
-    if (in_bounds(pos.se(),    width)) f(pos.se());
-    if (in_bounds(pos.south(), width)) f(pos.south());
-    if (in_bounds(pos.sw(),    width)) f(pos.sw());
-    if (in_bounds(pos.nw(),    width)) f(pos.nw());
+// memory order
+constexpr static qrs neighbor_order[] = {qrs::nw_unit(),
+                                         qrs::sw_unit(),
+                                         qrs::north_unit(),
+                                         qrs::south_unit(),
+                                         qrs::ne_unit(),
+                                         qrs::se_unit()};
+
+}
+
+inline void foreach_neighbor(uint16_t width, qrs pos, auto &&f) {
+    ASSERT_MSG(pos.integral(), "non-integral " << pos);
+
+    for (qrs unit : detail::neighbor_order) {
+        qrs neighbor = pos + unit;
+        if (in_bounds(neighbor, width)) f(neighbor);
+    }
+}
+
+namespace detail {
+
+class neighbor_iterator {
+    qrs center;
+    int width, i;
+
+    void set() {
+        while (i < 6 && !in_bounds(center + detail::neighbor_order[i], width)) i++;
+    }
+
+public:
+    using value_type = qrs;
+    using difference_type = std::ptrdiff_t;
+    using iterator_concept = std::forward_iterator_tag;
+
+    neighbor_iterator(): center(), width(0), i(6) {}
+
+    neighbor_iterator(int width, qrs center, int i): center(center), width(width), i(i) {
+        ASSERT_MSG(in_bounds(center, width), center << " vs " << width);
+        set();
+    }
+
+    qrs operator*() const { ASSERT_LT(i, 6); return center + detail::neighbor_order[i]; }
+
+    neighbor_iterator &operator++() { ASSERT_LT(i, 6); i++; set(); return *this; }
+    neighbor_iterator operator++(int) { auto ret = *this; ++*this; return ret; }
+
+    bool operator==(const neighbor_iterator &o) const {
+        ASSERT_EQ(center, o.center);
+        ASSERT_EQ(width, o.width);
+        return i == o.i;
+    }
+};
+
+struct neighbor_range {
+    int width;
+    qrs center;
+    neighbor_iterator begin() const { return {width, center, 0}; }
+    neighbor_iterator end()   const { return {width, center, 6}; }
+};
+
+}
+
+inline auto neighbors(int width, qrs pos) {
+    ASSERT_MSG(pos.integral(), "non-integral " << pos);
+    return detail::neighbor_range{width, pos};
 }
 
 // rotate clockwise on even edgelen
@@ -112,7 +170,7 @@ void find_islands(uint16_t width,
             qrs cur = stack.back();
             stack.pop_back();
 
-            foreach_neighbor(cur, width, [&](qrs nb) {
+            foreach_neighbor(width, cur, [&](qrs nb) {
                 uint16_t *i = islenum(nb);
                 if (i && *i == island_flag) claim(nb, i);
             });

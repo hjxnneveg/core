@@ -90,38 +90,6 @@ constexpr qrs scalar_to_qrs(size_t n, uint16_t width) {
     return {q, r};
 }
 
-inline auto neighbors(qrs pos, int width) {
-    constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
-
-    class iterator {
-        qrs center;
-        int width, i;
-
-        void set() { while (i < 6 && !in_bounds(center + seq[i], width)) i++; }
-
-    public:
-        iterator(qrs center, int width, int i): center(center), width(width), i(i) {
-            ASSERT_MSG(in_bounds(center, width), center << " vs " << width);
-            set();
-        }
-
-        qrs operator*() const { ASSERT_LT(i, 6); return center + seq[i]; }
-
-        iterator &operator++() { ASSERT_LT(i, 6); i++; set(); return *this; }
-
-        bool operator==(const iterator&) const = default;
-    };
-
-    struct range {
-        qrs center;
-        int width;
-        iterator begin() { return {center, width, 0}; }
-        iterator end()   { return {center, width, 6}; }
-    };
-
-    return range{pos, width};
-}
-
 
 template <typename Hex>
 class grid {
@@ -205,45 +173,10 @@ public:
                 f(qrs{q, r}, *hx++);
     }
 
+    auto neighbors(qrs pos) { return hex::neighbors(width_, pos); }
+
     void foreach_neighbor(qrs pos, auto &&f) const {
-        if (in_bounds(pos.north())) f(pos.north());
-        if (in_bounds(pos.ne()))    f(pos.ne());
-        if (in_bounds(pos.se()))    f(pos.se());
-        if (in_bounds(pos.south())) f(pos.south());
-        if (in_bounds(pos.sw()))    f(pos.sw());
-        if (in_bounds(pos.nw()))    f(pos.nw());
-    }
-
-    auto neighbors(qrs pos) { // fixme - duplication
-        constexpr static qrs seq[] = {{-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}};
-
-        class iterator {
-            qrs center;
-            int width, i;
-
-            void set() { while (i < 6 && !hex::in_bounds(center + seq[i], width)) i++; }
-
-        public:
-            iterator(qrs center, int width, int i): center(center), width(width), i(i) {
-                ASSERT_MSG(hex::in_bounds(center, width), center << " vs " << width);
-                set();
-            }
-
-            qrs operator*() const { ASSERT_LT(i, 6); return center + seq[i]; }
-
-            iterator &operator++() { ASSERT_LT(i, 6); i++; set(); return *this; }
-
-            bool operator==(const iterator&) const = default;
-        };
-
-        struct range {
-            qrs center;
-            int width;
-            iterator begin() { return {center, width, 0}; }
-            iterator end()   { return {center, width, 6}; }
-        };
-
-        return range{pos, width()};
+        for (qrs pos : hex::neighbors(width_, pos)) f(pos);
     }
 
     size_t to_scalar(int q, int r) const { return hex::to_scalar(q, r, width_); }
