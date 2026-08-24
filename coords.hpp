@@ -156,9 +156,12 @@ constexpr float square_dist(qrs, qrs);
 struct qrs : coords {
     constexpr qrs(): coords() {}
 
-    constexpr qrs(float q, float r): coords(q, r) {}
+    constexpr qrs(standard_arithmetic auto q,
+                  standard_arithmetic auto r): coords(float(q), float(r)) {}
 
-    constexpr qrs(float q, float r, float IF_ASSERTS_ON(s)): coords(q, r) {
+    constexpr qrs(standard_arithmetic auto q,
+                  standard_arithmetic auto r,
+                  standard_arithmetic auto IF_ASSERTS_ON(s)): coords(float(q), float(r)) {
         ASSERT_EQ(s, -q - r);
     }
 

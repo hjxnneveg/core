@@ -13,6 +13,9 @@
 
 namespace hjx::hex {
 
+constexpr qrs westunit{-2, 1};
+constexpr qrs eastunit{ 2,-1};
+
 constexpr size_t count(uint16_t width) {
     return size_t(width) * width - width/2 * (width/2 + 1);
 }
@@ -28,17 +31,64 @@ constexpr bool in_bounds(qrs pos, uint16_t width) {
     return in_bounds(pos.q(), pos.r(), width);
 }
 
-inline void foreach(uint16_t width, std::invocable<qrs> auto &&f) {
+inline void foreach(uint16_t width, auto &&f) {
     ASSERT_MSG(width & 1, "non-odd width " << width);
     float len = width/2;
 
     for (float q = -len; q < 0; q++)
         for (float s = len; s >= -len - q; s--)
-            f(qrs{q, -q-s});
+            f({q, -q-s});
 
     for (float q = 0; q <= len; q++)
         for (float r = -len; r <= len - q; r++)
-            f(qrs{q, r});
+            f({q, r});
+}
+
+//                   Bands                     //
+//                                             //
+//                   ------                    //
+//                  /      \                   //
+//            ------   -4   ------             //
+//           /      \      /      \            //
+//     ------   -3   ------   -3   ------      //
+//    /      \      /      \      /      \     //
+//   -   -2   ------   -2   ------   -2   -    //
+//    \      /      \      /      \      /     //
+//     ------   -2   ------   -2   ------      //
+//    /      \      /      \      /      \     //
+//   -    0   ------    0   ------    0   -    //
+//    \      /      \      /      \      /     //
+//     ------    1   ------    1   ------      //
+//    /      \      /      \      /      \     //
+//   -    2   ------    2   ------    2   -    //
+//    \      /      \      /      \      /     //
+//     ------    3   ------    3   ------      //
+//           \      /      \      /            //
+//            ------    4   ------             //
+//                  \      /                   //
+//                   ------                    //
+
+inline int num_bands(uint16_t width) { return 2 * width - 1; }
+
+// [-width/2..width/2]
+inline int band_idx(qrs pos) { return pos.r() + 0.5 * pos.q(); }
+
+// staggered horizontal bands
+// north to south, f(westmost, eastmost, count)
+inline void foreach_band(uint16_t width, auto &&f) {
+    ASSERT_MSG(width & 1, "non-odd width " << width);
+    float len = width/2;
+
+    for (int i = 0; i < len; i++)
+        f({-i, i - len}, {i, -len}, i + 1);
+
+    for (int i = 0; i < len; i++) {
+        f({-len, i}, {len, i - len}, len + 1);
+        f({1 - len, i}, {len - 1, 1 - len + i}, len);
+    }
+
+    for (int i = 0; i <= len; i++)
+        f({i - len, len}, {len - i, i}, len + 1 - i);
 }
 
 namespace detail {
