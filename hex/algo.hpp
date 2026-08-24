@@ -54,7 +54,7 @@ inline void foreach(uint16_t width, auto &&f) {
 //    /      \      /      \      /      \     //
 //   -   -2   ------   -2   ------   -2   -    //
 //    \      /      \      /      \      /     //
-//     ------   -2   ------   -2   ------      //
+//     ------   -1   ------   -1   ------      //
 //    /      \      /      \      /      \     //
 //   -    0   ------    0   ------    0   -    //
 //    \      /      \      /      \      /     //
@@ -71,7 +71,7 @@ inline void foreach(uint16_t width, auto &&f) {
 inline int num_bands(uint16_t width) { return 2 * width - 1; }
 
 // [-width/2..width/2]
-inline int band_idx(qrs pos) { return pos.r() + 0.5 * pos.q(); }
+inline int band_idx(qrs pos) { return 2 * pos.r() + pos.q(); }
 
 // staggered horizontal bands
 // north to south, f(westmost, eastmost, count)
@@ -177,10 +177,7 @@ constexpr qrs edge_midpoint(direction d, uint16_t width) {
 }
 
 
-template <unsigned N>
-std::array<qrs, N> find_greatest(uint16_t width, auto &&gt) {
-    static_assert(N < 1000); // probably
-
+auto find_greatest(std::same_as<uint16_t> auto width, size_t N, auto &&gt) {
     std::priority_queue<qrs, std::vector<qrs>, std::decay_t<decltype(gt)>> heap(FWD(gt));
 
     foreach(width, [&](qrs pos) {
@@ -188,15 +185,7 @@ std::array<qrs, N> find_greatest(uint16_t width, auto &&gt) {
         if (heap.size() > N) heap.pop();
     });
 
-    std::array<qrs, N> ret;
-
-    for (qrs &pos : ret) {
-        if (heap.empty()) break;
-        pos = heap.top();
-        heap.pop();
-    }
-
-    return ret;
+    return heap;
 }
 
 

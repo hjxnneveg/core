@@ -206,6 +206,8 @@ public:
         return to_hex(to_scalar(q, r));
     }
 
+    Hex *to_hexp(qrs pos) { return in_bounds(pos) ? &to_hex(pos) : nullptr; }
+
 #if 0
     void foreach(rect_t<xy> region, auto &&f) const {
         int min_q = std::floor(qrs{region.nw()}.q());

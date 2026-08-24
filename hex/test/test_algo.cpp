@@ -100,11 +100,14 @@ DEFINE_TEST(find_greatest) {
     });
 
     auto gt = [&](qrs a, qrs b) { return g.to_hex(a) > g.to_hex(b); };
-    std::array<qrs, 6> greatest = find_greatest<6>(g.width(), gt);
+    auto greatest = find_greatest(g.width(), 6, gt);
 
     uint64_t results = 0;
 
-    for (qrs great : greatest) {
+    while (greatest.size()) {
+        qrs great = greatest.top();
+        greatest.pop();
+
         int n = g.to_hex(great);
         TEST_NOT(results & 1 << n);
         results |= 1 << n;
