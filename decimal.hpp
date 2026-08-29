@@ -72,7 +72,8 @@ struct decimal {
 
     constexpr decimal(): storage(nil_repr) {}
 
-    constexpr decimal(float x): storage(fix(x)) {}
+    // todo - decide about implicit conversions after more use cases
+    explicit constexpr decimal(float x): storage(fix(x)) {}
 
     static constexpr decimal from_repr(Rep r) {
         decimal ret;
@@ -80,17 +81,11 @@ struct decimal {
         return ret;
     }
 
-    constexpr honest_float get() const { return unfix(storage); }
-
-    constexpr Rep raw() const { return storage; }
-
-    // consider math
-    constexpr operator float() const { return unfix(storage); }
-
     constexpr bool valid() const { return storage != nil_repr; }
     constexpr bool nilp() const { return storage == nil_repr; }
 
-    constexpr Rep repr() const { return storage; }
+    constexpr honest_float get() const { return unfix(storage); }
+    constexpr Rep raw() const { return storage; } // e.g. for math
 
     constexpr bool operator==(const decimal&) const = default;
 
@@ -101,8 +96,10 @@ struct decimal {
         return std::partial_ordering::greater;
     }
 
-    friend constexpr bool operator==(decimal d, const auto &x) { return unfix(d) == x; }
-    friend constexpr auto operator<=>(decimal d, const auto &x) { return unfix(d) <=> x; }
+#if 0
+    decimal &operator-=(decimal o) &;
+    // et al
+#endif
 
     constexpr decimal operator-() const requires std::is_signed_v<Rep> {
         ASSERT(valid());
@@ -164,9 +161,9 @@ struct decimal {
     }
 };
 
-using dec8    = decimal<uint8_t,  1>; // [-12.7..12.7]
+using dec8    = decimal<int8_t,   1>; // [-12.7..12.7]
 using udec16  = decimal<uint16_t, 1>; // [0..6553.4]
-using ucent16 = decimal<int16_t,  2>; // [-327.67..327.67]
-using cent16  = decimal<int16_t,  2>; // [0..655.34]
+using cent16  = decimal<int16_t,  2>; // [-327.67..327.67]
+using ucent16 = decimal<uint16_t, 2>; // [0..655.34]
 
 }

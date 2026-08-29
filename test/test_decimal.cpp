@@ -60,20 +60,20 @@ void test_decimal_common() {
     test_token("", T{});
     test_token(".", T{});
     test_token("a", T{});
-    test_token(" 1", 1);
+    test_token(" 1", T{1});
 
-    test_token("0", 0);
-    test_token("00", 0);
+    test_token("0", T{0});
+    test_token("00", T{0});
 
     if (exp >= 1) {
-        test_token("0.0", 0);
-        test_token("1.", 1);
-        test_token("09.0", 9);  // not octal
+        test_token("0.0", T{0});
+        test_token("1.", T{1});
+        test_token("09.0", T{9});  // not octal
     }
 
     if (exp >= 2) {
-        test_token("0.00", 0);
-        test_token("00.00", 0);
+        test_token("0.00", T{0});
+        test_token("00.00", T{0});
     }
 
     if      (exp == 0) test_token("1.0", T{});
@@ -81,7 +81,7 @@ void test_decimal_common() {
     else if (exp == 2) test_token("1.000", T{});
 
     if (is_signed) {
-        test_token("-1", -1);
+        test_token("-1", T{-1});
         test_token("-", T{});
         test_token("-.", T{});
     }
@@ -89,9 +89,9 @@ void test_decimal_common() {
         test_token("-1", T{});
     }
 
-    if (exp >= 1) test_token(".0", 0);
-    if (exp >= 2) test_token(".00", 0);
-    if (is_signed && exp >= 1) test_token("-.1", -0.1);
+    if (exp >= 1) test_token(".0", T{0});
+    if (exp >= 2) test_token(".00", T{0});
+    if (is_signed && exp >= 1) test_token("-.1", T{-0.1});
 
     for (int i = std::numeric_limits<Rep>::min();
          i <= std::numeric_limits<Rep>::max(); i++)
