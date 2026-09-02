@@ -24,7 +24,7 @@
 // fixme - doesn't work for STL temporaries
 #define TO_STRING(x) (static_cast<std::ostringstream&&>(std::ostringstream() << x).str())
 
-#define ONCE(x) BRIEFLY(1, x)
+#define ONCE(...) BRIEFLY(1, __VA_ARGS__)
 
 #define BRIEFLY(N, ...)                                                         \
     do {                                                                        \
