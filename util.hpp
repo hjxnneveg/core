@@ -26,7 +26,6 @@
 
 namespace hjx {
 
-using std::ostream;
 using std::string;
 using std::string_view;
 using std::vector;

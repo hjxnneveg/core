@@ -5,8 +5,8 @@
 
 #include "entropy.hpp"
 
-#include "external/fast_float/fast_float.h"
-#include "external/utfcpp/source/utf8.h"
+#include <external/fast_float/fast_float.h>
+#include <external/utfcpp/source/utf8.h>
 
 #include <charconv>
 #include <optional>
@@ -265,7 +265,7 @@ public:
 
     const char *iter() const { return cur_; }
 
-    friend ostream &operator<<(ostream &os, const feed &x) {
+    friend std::ostream &operator<<(std::ostream &os, const feed &x) {
         return os << some_of(x.iter());
     }
 };

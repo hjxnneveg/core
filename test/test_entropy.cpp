@@ -220,6 +220,7 @@ DEFINE_TEST(stud) {
         uint64_t u = 0xffff'ffff'ffff'ffff;
         while (u > 0xffff'ffff'ffff'ffff - STUD_ULP) u = rand();
         TEST_EQ(stud(u + STUD_ULP), stud_oc(u));
+        TEST_GE(stud_oc(u), stud_ulp());
     }
 
     test_club(rand);

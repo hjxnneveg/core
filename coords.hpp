@@ -48,6 +48,9 @@ struct coords {
 
     constexpr explicit operator bool() const { return !nilp(); }
 
+    float  slot(size_t n) const { ASSERT_LT(n, 2); return n ? psi : phi; }
+    float &slot(size_t n)       { ASSERT_LT(n, 2); return n ? psi : phi; }
+
     bool integral() const { return phi == std::trunc(phi) && psi == std::trunc(psi); }
 
     friend std::ostream &operator<<(std::ostream &os, coords p) {

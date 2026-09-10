@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2025 Joshua C Marshall
+// Copyright (c) 2025-2026 Joshua C Marshall
 
 #pragma once
 
-#include "core/pouch.hpp"
-#include "core/unique_str.hpp"
+#include "pouch.hpp"
+#include "unique_str.hpp"
 
 #include <new>
 
@@ -54,7 +54,7 @@ public:
     operator const char*() const { return str; }
     explicit operator bool() const { return str; }
 
-    friend ostream &operator<<(ostream &os, managed_cstr s) {
+    friend std::ostream &operator<<(std::ostream &os, managed_cstr s) {
         return os << (s.str ? s.str : "");
     }
 };

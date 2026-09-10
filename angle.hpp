@@ -85,7 +85,7 @@ public:
         return angle::degrees(deg() * rhs);
     }
 
-    friend ostream &operator<<(ostream &os, angle a) {
+    friend std::ostream &operator<<(std::ostream &os, angle a) {
         return os << honest_float(a.deg()) << "°";
     }
 };

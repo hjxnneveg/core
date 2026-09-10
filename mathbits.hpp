@@ -174,7 +174,7 @@ struct interval {
     bool proper() const { return max >= min; }
     interval flip() const { return interval{max, min}; }
 
-    friend ostream &operator<<(ostream &os, interval v) {
+    friend std::ostream &operator<<(std::ostream &os, interval v) {
         return os << "[" << honest_float{v.min} << ", " << honest_float{v.max} << "]";
     }
 };
@@ -206,7 +206,7 @@ public:
         return std::fma(x - af, scale, at);
     }
 
-    friend ostream &operator<<(ostream &os, const affine_map &map) {
+    friend std::ostream &operator<<(std::ostream &os, const affine_map &map) {
         os << map.from << "↦" << map.to;
         if (!map.valid())
             os << " mid: " << honest_float{map.mid}

@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "core/logging.hpp"
-#include "core/cli.hpp"
-#include "core/version.hpp"
-#include "core/time.hpp"
-#include "core/token.hpp"
+#include <core/logging.hpp>
+#include <core/cli.hpp>
+#include <core/version.hpp>
+#include <core/time.hpp>
+#include <core/token.hpp>
 
 #define TEST(x) TEST_MSG(x, #x)
 #define TEST_MSG(x, msg) PROVE_MSG(x, msg, REPORT_THROW)
@@ -151,20 +151,20 @@ struct journal {
     }
 
     static inline int c_;
-    journal() noexcept: x(0) { c_++; log("c  "); }
-    journal(int x) noexcept: x(x) { c_++; log("ci "); }
+    journal(): x(0) { c_++; log("c  "); }
+    journal(int x): x(x) { c_++; log("ci "); }
 
     static inline int d_;
     ~journal() { d_++; log("d  "); }
 
     static inline int cc_;
-    journal(const journal &o) noexcept: x(o.x) { cc_++; log("cc "); }
+    journal(const journal &o): x(o.x) { cc_++; log("cc "); }
 
     static inline int mc_;
     journal(journal &&o) noexcept: x(o.x) { mc_++; log("mc "); }
 
     static inline int ca_;
-    journal &operator=(const journal &o) noexcept {
+    journal &operator=(const journal &o) {
         ca_++;
         x = o.x;
         log("ca ");
@@ -196,9 +196,9 @@ struct journal {
                   << " ca:" << ca_ << " ma:" << ma_ << std::endl;
     }
 
-    auto operator==(const journal &o) const noexcept { return x == o.x; }
+    auto operator==(const journal &o) const { return x == o.x; }
 
-    friend ostream &operator<<(ostream &os, const journal &j) {
+    friend std::ostream &operator<<(std::ostream &os, const journal &j) {
         return os << j.x;
     }
 };

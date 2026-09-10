@@ -241,6 +241,8 @@ constexpr float stud_oc(uint64_t u) {
     return uniform12_(u, true) - 1;
 }
 
+constexpr float stud_ulp() { return stud(STUD_ULP); } // ~0.00000012
+
 // closed 1D unit ball with a gap at the origin
 // [0..2^64-1] ↦ [-1.0, 1.0] \ 0.0
 constexpr float club_gap(uint64_t u) {

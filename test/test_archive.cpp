@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Joshua C Marshall
 
-#include "core/archive.hpp"
+#include <core/archive.hpp>
 
-#include "core/test/tests.hpp"
+#include <core/test/tests.hpp>
 
 namespace hjx {
 
@@ -17,7 +17,9 @@ struct point {
 
     static point deserialize(auto &x) { return {x.get_float(), x.get_float()}; }
 
-    friend ostream &operator<<(ostream &os, point p) { return os << p.x << "," << p.y; }
+    friend std::ostream &operator<<(std::ostream &os, point p) {
+        return os << p.x << "," << p.y;
+    }
 };
 
 DEFINE_TEST(heterogeny) {
