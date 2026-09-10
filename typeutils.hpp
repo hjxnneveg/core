@@ -8,7 +8,10 @@
 #include <limits>
 #include <utility>
 
-namespace hjx {
+// std::size doesn't work for compile-time array size
+#define countof(x)                                                      \
+    (([]{ static_assert(std::is_bounded_array_v<decltype(x)>); })(),    \
+     (sizeof(x) / sizeof(*(x))))
 
 #define FWD(name) std::forward<decltype(name)>(name)
 
@@ -16,6 +19,8 @@ namespace hjx {
 
 #define IS_CALLABLE_DEF(f) \
     []<typename T>() { return requires { f(std::declval<T>()); }; }
+
+namespace hjx {
 
 template<typename F, typename R, typename... Args>
 concept invocable_r = std::is_invocable_r_v<R, F, Args...>;

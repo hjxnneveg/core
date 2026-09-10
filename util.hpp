@@ -30,12 +30,7 @@ using std::string;
 using std::string_view;
 using std::vector;
 
-// std::size doesn't work for compile-time array size
-#define countof(x)                                                      \
-    (([]{ static_assert(std::is_bounded_array_v<decltype(x)>); })(),    \
-     (sizeof(x) / sizeof(*(x))))
-
-
+#if 0
 template <class F>
 constexpr void foreach_u64(const char *p, size_t n, F &&f) {
     while (n >= 8) {
@@ -52,10 +47,10 @@ constexpr void foreach_u64(const char *p, size_t n, F &&f) {
     }
 }
 
-
 inline const char *starts_with(const char *s, const char *prefix) noexcept {
     while (*prefix && *s == *prefix) { s++; prefix++; }
     return *prefix ? nullptr : s;
 }
+#endif
 
 }

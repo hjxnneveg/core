@@ -151,6 +151,10 @@ constexpr bool is(float x) {
     return (u & exp_bits) == exp_bits && (u & full_payload_mask);
 }
 
+constexpr bool standard(float x) {
+    return std::bit_cast<uint32_t>(x) == quiet_bits;
+}
+
 constexpr unsigned payload(float nan) {
     ASSERT_MSG(std::isnan(nan), frepr(nan));
     return std::bit_cast<uint32_t>(nan) & quiet_payload_mask;

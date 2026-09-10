@@ -50,25 +50,18 @@ DEFINE_TEST(intersect_ray) {
     TEST_EQFISH(intersect({0,0}, {1,0}, circle{{2,0}, 1}), 1);
 }
 
-#define TEST_EQXYISH(a, b)                      \
-    do {                                        \
-        xy ac = a;                              \
-        xy bc = b;                              \
-        TEST_EQFISH(ac.x(), bc.x());            \
-        TEST_EQFISH(ac.y(), bc.y());            \
-    } while (false)
 
 DEFINE_TEST(intersect_circle) {
     // head on, equal radii
     intersection r = intersect(circle{{0,0},1}, {4,0}, circle{{4,0},1});
-    TEST_EQXYISH(r.impact, xy(3,0));
-    TEST_EQXYISH(r.normal, xy(-1,0));
+    TEST_EQFISH_COORDS(r.impact, xy(3,0));
+    TEST_EQFISH_COORDS(r.normal, xy(-1,0));
     TEST_EQFISH(r.t, 0.5);
 
     // 3-4-5
     r = intersect(circle{{0,0},1}, {10,0}, circle{{8,4},4});
-    TEST_EQXYISH(r.impact, xy(5.6,0.8));
-    TEST_EQXYISH(r.normal, xy(-0.6,-0.8));
+    TEST_EQFISH_COORDS(r.impact, xy(5.6,0.8));
+    TEST_EQFISH_COORDS(r.normal, xy(-0.6,-0.8));
     TEST_EQFISH(r.t, 0.5);
 
     // overlapping start
@@ -83,8 +76,8 @@ DEFINE_TEST(intersect_circle) {
 
     // contact finish
     r = intersect(circle{{0,0},1}, {2,0}, circle{{4,0},1});
-    TEST_EQXYISH(r.impact, xy(3,0));
-    TEST_EQXYISH(r.normal, xy(-1,0));
+    TEST_EQFISH_COORDS(r.impact, xy(3,0));
+    TEST_EQFISH_COORDS(r.normal, xy(-1,0));
     TEST_EQFISH(r.t, 1);
 
     // miss
@@ -133,26 +126,26 @@ DEFINE_TEST(intersect_circle_obb) {
     // face head-on: inflated face x=2, contact on the real face
     intersection r = intersect(circle{{0, 0}, 1}, {4, 0}, ax);
     TEST(r);
-    TEST_EQXYISH(r.impact, xy(3,0));
-    TEST_EQXYISH(r.normal, xy(-1,0));
+    TEST_EQFISH_COORDS(r.impact, xy(3,0));
+    TEST_EQFISH_COORDS(r.normal, xy(-1,0));
     TEST_EQFISH(r.t, 0.5);
 
     // corner arc: enters x-slab past the top face, rolls onto the (3,1) corner
     r = intersect(circle{{0,1.6},1}, {8,0}, ax);
-    TEST_EQXYISH(r.impact, xy(3, 1));
-    TEST_EQXYISH(r.normal, xy(-0.8, 0.6));
+    TEST_EQFISH_COORDS(r.impact, xy(3, 1));
+    TEST_EQFISH_COORDS(r.normal, xy(-0.8, 0.6));
     TEST_EQFISH(r.t, 0.275);
 
     // tangent edge skim from corner
     r = intersect(circle{{0,2},1}, {8,0}, ax);
     TEST_EQ(r.impact, xy(3,1)); // hard to imagine this one not being exact
-    TEST_EQXYISH(r.normal, xy(0,1));
+    TEST_EQFISH_COORDS(r.normal, xy(0,1));
     TEST_EQFISH(r.t, 0.375);
 
     // rotated face center hit along the box axis; normal rotated back to world
     r = intersect(circle{{-3,-4}, 1}, {6,8}, rot);
-    TEST_EQXYISH(r.impact, xy(-0.6, -0.8));
-    TEST_EQXYISH(r.normal, xy(-0.6, -0.8));
+    TEST_EQFISH_COORDS(r.impact, xy(-0.6, -0.8));
+    TEST_EQFISH_COORDS(r.normal, xy(-0.6, -0.8));
     TEST_EQFISH(r.t, 0.3);
 
     // Corner-arc case (above) re-centered on the box and rotated by rot's
@@ -163,32 +156,32 @@ DEFINE_TEST(intersect_circle_obb) {
     auto R = [](xy p) { return xy(0.6 * p.x() - 0.8 * p.y(),
                                   0.8 * p.x() + 0.6 * p.y()); };
     r = intersect(circle{R({-4, 1.6}), 1}, R({8, 0}), rot);
-    TEST_EQXYISH(r.impact, R({-1, 1}));
-    TEST_EQXYISH(r.normal, R({-0.8, 0.6}));
+    TEST_EQFISH_COORDS(r.impact, R({-1, 1}));
+    TEST_EQFISH_COORDS(r.normal, R({-0.8, 0.6}));
     TEST_EQFISH(r.t, 0.275);
 
     // from_axis agrees with explicit cos/sin
     r = intersect(circle{{-3,-4}, 1}, {6,8}, obb::from_axis({0,0}, {1,1}, {3,4}));
-    TEST_EQXYISH(r.normal, xy(-0.6, -0.8));
+    TEST_EQFISH_COORDS(r.normal, xy(-0.6, -0.8));
     TEST_EQFISH(r.t, 0.3);
 
     // penetration at start, off-face: push out perpendicular to nearest face
     r = intersect(circle{{0, 1.5}, 1}, {2,0}, org);
-    TEST_EQXYISH(r.impact, xy(0, 0.5));
-    TEST_EQXYISH(r.normal, xy(0, 1));
+    TEST_EQFISH_COORDS(r.impact, xy(0, 0.5));
+    TEST_EQFISH_COORDS(r.normal, xy(0, 1));
     TEST_EQFISH(r.t, 0);
     TEST(r);
 
     // penetration with center inside the box: degenerate -delta fallback
     r = intersect(circle{{0, 0.5}, 1}, {2,0}, org);
-    TEST_EQXYISH(r.impact, xy(1, 0.5));
-    TEST_EQXYISH(r.normal, xy(-1, 0));
+    TEST_EQFISH_COORDS(r.impact, xy(1, 0.5));
+    TEST_EQFISH_COORDS(r.normal, xy(-1, 0));
     TEST_EQFISH(r.t, 0);
 
     // corner notch: inside inflated AABB, outside rounded shape, sweeping in
     r = intersect(circle{{1.8, 1.8}, 1}, {-1,-1}, org);
-    TEST_EQXYISH(r.impact, xy(1,1));
-    TEST_EQXYISH(r.normal, xy(math::sqrt2/2, math::sqrt2/2));
+    TEST_EQFISH_COORDS(r.impact, xy(1,1));
+    TEST_EQFISH_COORDS(r.normal, xy(math::sqrt2/2, math::sqrt2/2));
     TEST_EQFISH(r.t, 0.8 - math::sqrt2/2);
 
     // corner notch sweeping away: t<0 root rejected, not a forward entry
@@ -201,8 +194,8 @@ DEFINE_TEST(intersect_circle_obb) {
 
     // zeroish length: static rounded-rect overlap
     r = intersect(circle{{1.5, 0}, 1}, {0,0}, org);
-    TEST_EQXYISH(r.impact, xy(0.5, 0));
-    TEST_EQXYISH(r.normal, xy(1, 0));
+    TEST_EQFISH_COORDS(r.impact, xy(0.5, 0));
+    TEST_EQFISH_COORDS(r.normal, xy(1, 0));
     TEST_EQFISH(r.t, 0);
     TEST_NOT(intersect(circle{{2.5, 0}, 1}, {0,0}, org));
 
@@ -229,68 +222,68 @@ DEFINE_TEST(intersect_circle_triangle) {
 
     intersection r = intersect(circle{{2,-4}, 1}, {0,4}, tri);
     TEST_EQ(r.impact, xy(2,0));
-    TEST_EQXYISH(r.normal, xy(0,-1));
+    TEST_EQFISH_COORDS(r.normal, xy(0,-1));
     TEST_EQFISH(r.t, 0.75);
 
     // face hit, hypotenuse, straight down its normal
     r = intersect(circle{{5, 5.5}, 1}, {-4.8, -6.4}, tri);
-    TEST_EQXYISH(r.impact, xy(2, 1.5));
-    TEST_EQXYISH(r.normal, xy(0.6, 0.8));
+    TEST_EQFISH_COORDS(r.impact, xy(2, 1.5));
+    TEST_EQFISH_COORDS(r.normal, xy(0.6, 0.8));
     TEST_EQFISH(r.t, 0.5);
 
     // winding independence: reversed vertex order, same answer
     r = intersect(circle{{5, 5.5}, 1}, {-4.8, -6.4}, rev);
-    TEST_EQXYISH(r.impact, xy(2, 1.5));
-    TEST_EQXYISH(r.normal, xy(0.6, 0.8));
+    TEST_EQFISH_COORDS(r.impact, xy(2, 1.5));
+    TEST_EQFISH_COORDS(r.normal, xy(0.6, 0.8));
     TEST_EQFISH(r.t, 0.5);
 
     // vertex cap at B: diagonal approach; hypotenuse's face entry is off-span
     r = intersect(circle{{8,3}, 1}, {-4,-4}, tri);
-    TEST_EQXYISH(r.impact, xy(4,0));
-    TEST_EQXYISH(r.normal, xy(1,0)); // as if wall at x=4
+    TEST_EQFISH_COORDS(r.impact, xy(4,0));
+    TEST_EQFISH_COORDS(r.normal, xy(1,0)); // as if wall at x=4
     TEST_EQFISH(r.t, 0.75);
 
     // penetration, center inside the solid: degenerate -delta fallback
     r = intersect(circle{{2, 0.5}, 1}, {1,0}, tri);
-    TEST_EQXYISH(r.impact, xy(3, 0.5));
-    TEST_EQXYISH(r.normal, xy(-1, 0));
+    TEST_EQFISH_COORDS(r.impact, xy(3, 0.5));
+    TEST_EQFISH_COORDS(r.normal, xy(-1, 0));
     TEST_EQFISH(r.t, 0);
 
     // penetration, center outside but within R: push out through nearest face
     r = intersect(circle{{2, -0.5}, 1}, {1,0}, tri);
-    TEST_EQXYISH(r.impact, xy(2, 0.5));
-    TEST_EQXYISH(r.normal, xy(0, -1));
+    TEST_EQFISH_COORDS(r.impact, xy(2, 0.5));
+    TEST_EQFISH_COORDS(r.normal, xy(0, -1));
     TEST_EQFISH(r.t, 0);
 
     // vertex notch: inside the offset wedge, outside the cap
     r = intersect(circle{{5.5, -0.5}, 1}, {1,0}, tri); // sweeping away
     TEST_REPR(r, "nil");
     r = intersect(circle{{5.5, -0.5}, 1}, {-4,0}, tri); // sweeping in: cap entry
-    TEST_EQXYISH(r.impact, xy(4,0));
-    TEST_EQXYISH(r.normal, xy(sqrt3/2, -0.5));
+    TEST_EQFISH_COORDS(r.impact, xy(4,0));
+    TEST_EQFISH_COORDS(r.normal, xy(sqrt3/2, -0.5));
     TEST_EQFISH(r.t, (3 - sqrt3) / 8);
 
     // contact at finish / stops short
     r = intersect(circle{{2,-4}, 1}, {0,3}, tri);
-    TEST_EQXYISH(r.impact, xy(2,0));
-    TEST_EQXYISH(r.normal, xy(0,-1));
+    TEST_EQFISH_COORDS(r.impact, xy(2,0));
+    TEST_EQFISH_COORDS(r.normal, xy(0,-1));
     TEST_EQFISH(r.t, 1);
     TEST_REPR(intersect(circle{{2,-4}, 1}, {0,2}, tri), "nil");
 
     // zeroish length: static overlap, face region and vertex region
     r = intersect(circle{{2, -0.5}, 1}, {0,0}, tri);
-    TEST_EQXYISH(r.normal, xy(0,-1));
+    TEST_EQFISH_COORDS(r.normal, xy(0,-1));
     TEST_EQFISH(r.t, 0);
     r = intersect(circle{{4.5, -0.5}, 1}, {0,0}, tri);
-    TEST_EQXYISH(r.normal, xy(math::sqrt2/2, -math::sqrt2/2));
+    TEST_EQFISH_COORDS(r.normal, xy(math::sqrt2/2, -math::sqrt2/2));
     TEST_EQFISH(r.t, 0);
     TEST_NAN(intersect(circle{{2,-3}, 1}, {0,0}, tri).t);
 
     // obtuse isosceles (30-30-120): straight down onto the wide apex's cap
     triangle obt{{0,0}, {6,0}, {3, sqrt3}};
     r = intersect(circle{{3,5}, 1}, {0,-4}, obt);
-    TEST_EQXYISH(r.impact, xy(3, sqrt3));
-    TEST_EQXYISH(r.normal, xy(0,1));
+    TEST_EQFISH_COORDS(r.impact, xy(3, sqrt3));
+    TEST_EQFISH_COORDS(r.normal, xy(0,1));
     TEST_EQFISH(r.t, (4 - sqrt3) / 4);
 }
 

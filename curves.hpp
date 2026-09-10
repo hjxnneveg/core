@@ -12,10 +12,10 @@ class bezier2 {
     T A, B, C;
 
 public:
-    bezier2(T a, T b, T c) noexcept:
+    bezier2(T a, T b, T c):
         A(c - 2*b + a), B(2*b - 2*a), C(a) {}
 
-    T operator()(float t) const noexcept { return (A*t + B)*t + C; }
+    T operator()(float t) const { return (A*t + B)*t + C; }
 };
 
 template <typename T>
@@ -23,10 +23,10 @@ class bezier3 {
     T A, B, C, D;
 
 public:
-    bezier3(T a, T b, T c, T d) noexcept:
+    bezier3(T a, T b, T c, T d):
         A(d - 3*c + 3*b - a), B(3*c - 6*b + 3*a), C(3*b - 3*a), D(a) {}
 
-    T operator()(float t) const noexcept { return ((A*t + B)*t + C)*t + D; }
+    T operator()(float t) const { return ((A*t + B)*t + C)*t + D; }
 };
 
 }

@@ -47,11 +47,13 @@ public:
     const uint64_t &raw() const { return storage; }
     uint64_t &raw() { return storage; }
 
-    friend ostream &operator<<(ostream &os, genid id) {
+    friend std::ostream &operator<<(std::ostream &os, genid id) {
         if (!id) return os << "[genid nil]";
         return os << "[genid " << id.index() << " #" << id.generation() << "]";
     }
 };
+
+constexpr std::size_t hash_value(const genid &id) { return hjx::hash(id.raw()); }
 
 }
 
@@ -223,7 +225,7 @@ public:
     auto begin() const { return iter<true>(this, 1); }
     auto end() const { return iter<true>(this, uint32_t(slots.size())); }
 
-    friend ostream &operator<<(ostream &os, const genarray &a) {
+    friend std::ostream &operator<<(std::ostream &os, const genarray &a) {
         size_t free = a.slots.size() - 1 - a.live() - a.retired();
         os << "[genarray live " << a.live() << " free " << free;
         if (a.retired()) os << " retired " << a.retired();

@@ -49,6 +49,14 @@
 #define TEST_THROW(...)
 #endif
 
+#define TEST_EQFISH_COORDS(a, b)                                \
+    do {                                                        \
+        decltype(a) const MKVARNAME(av) = a;                    \
+        decltype(b) const MKVARNAME(bv) = b;                    \
+        TEST_EQFISH(MKVARNAME(av).phi, MKVARNAME(bv).phi);      \
+        TEST_EQFISH(MKVARNAME(av).psi, MKVARNAME(bv).psi);      \
+    } while (false)
+
 
 #define DEFINE_TEST(name)                                                      \
     void test_##name();                                                        \

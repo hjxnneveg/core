@@ -313,6 +313,7 @@ DEFINE_TEST(math) {
     TEST_EQ(squircle(1,    1), 1);
 }
 
+
 DEFINE_TEST(nan) {
     TEST(std::isnan(nan::make()));
     TEST(std::isnan(nan::make(1)));
@@ -342,7 +343,16 @@ DEFINE_TEST(nan) {
     TEST_EQ(nan::payload(nan::make()), 0);
     TEST_EQ(nan::payload(nan::make(1)), 1);
     TEST_EQ(nan::payload(nan::make(0x003f'ffff)), 0x003f'ffff);
+
+    TEST(nan::standard(nan::make()));
+    TEST(nan::standard(nan::make(0)));
+    TEST(!nan::standard(nan::make(12)));
+    TEST(!nan::standard(0));
+    TEST(!nan::standard(6));
+    TEST(!nan::standard(-0.f));
+    TEST(!nan::standard(inf));
 }
+
 
 DEFINE_TEST(phony_uint) {
     rand_t rand(test::harness::seed());
