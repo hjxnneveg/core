@@ -253,6 +253,10 @@ DEFINE_TEST(math) {
 
     TEST_EQ(mod(3, 2), 1);
     TEST_EQ(mod(-3, 2), 1);
+    TEST_EQ(mod(-7, 6u), 5);
+    TEST_EQ(mod(-1, 6u), 5);
+    TEST_EQ(mod(-6, 6u), 0);
+    TEST_EQ(mod(-7, 6ul), 5);
 
     TEST_EQ(scale(100,   0, 100),   0);
     TEST_EQ(scale(100,   1, 100),   1);

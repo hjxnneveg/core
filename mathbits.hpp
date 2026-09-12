@@ -219,9 +219,11 @@ public:
     }
 };
 
+
 constexpr float sqrt2 = std::numbers::sqrt2;
 constexpr float sqrt3 = std::numbers::sqrt3;
 constexpr float pi = std::numbers::pi;
+
 
 constexpr auto abs(std::signed_integral auto x) {
     using T = decltype(x);
@@ -230,25 +232,25 @@ constexpr auto abs(std::signed_integral auto x) {
     return (x ^ mask) - mask;
 }
 
-
 constexpr auto abs(std::unsigned_integral auto x) { return x; }
 
-template <arithmetic T, arithmetic M>
-constexpr T mod(T a, M m) {
+
+template <std::integral T>
+constexpr T mod(T a, std::type_identity_t<T> m) {
     ASSERT_GT(m, 0);
+
     T t = a % m;
-    return t < 0 ? t + m : t;
+
+    if constexpr (std::signed_integral<T>)
+        return t < 0 ? t + m : t;
+    else
+        return t;
 }
 
-template <arithmetic T, arithmetic M>
-constexpr T add_mod(T a, M m) {
-    ASSERT_GE(a, 0);
-    ASSERT_GT(m, 0);
-    return a < m ? a : a - m;
-}
 
 template <std::integral T>
 T average(T a, T b) { return (a & b) + ((a ^ b) >> 1); }
+
 
 template <typename T>
 constexpr T lerpx(T a, T b, float t) { return a + t * (b - a); }
