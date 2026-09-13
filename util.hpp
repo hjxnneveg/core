@@ -17,9 +17,11 @@
 #define CONCAT2(x, y) x##y
 #define CONCAT(x, y) CONCAT2(x, y)
 
-#define MKVARNAME3(name, line) name ## _ ## line ## _
-#define MKVARNAME2(name, line) MKVARNAME3(name, line)
-#define MKVARNAME(name) MKVARNAME2(name, __LINE__)
+#define MKNAME3(name, line) name ## _ ## line ## _
+#define MKNAME2(name, line) MKNAME3(name, line)
+#define MKNAME(name) MKNAME2(name, __LINE__)
+
+#define MKVARNAME MKNAME
 
 // fixme - doesn't work for STL temporaries
 #define TO_STRING(x) (static_cast<std::ostringstream&&>(std::ostringstream() << x).str())

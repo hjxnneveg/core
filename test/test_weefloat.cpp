@@ -70,7 +70,7 @@ DEFINE_TEST(weefloat) {
 
     TEST_THROW(weefloat{1.f} == nan);
     TEST_THROW(weefloat{1.f} == inf);
-    TEST_THROW(weefloat{1.f} < -1.f);
+    TEST_THROW((void)(weefloat{1.f} < -1.f));
     TEST_THROW(nan == weefloat{1.f});
 }
 

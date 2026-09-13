@@ -172,6 +172,15 @@
 #define ASSERT_NOT(x) PROVE_NOT(x, REPORT_THROW)
 #define ASSERT_EQFISH(a, b) PROVE_EQFISH(a, b, REPORT_THROW)
 
+#define ASSERT_FITS(v, ...)                                             \
+    do {                                                                \
+        auto MKVARNAME(val) = v;                                        \
+        ASSERT_MSG(std::in_range<__VA_ARGS__>(MKVARNAME(val)),          \
+                   +MKVARNAME(val) << " exceeds " << #__VA_ARGS__);     \
+    } while (false)
+
+#define ASSERT_FITSV(v, ...) ASSERT_FITS(v, decltype(__VA_ARGS__))
+
 #else
 
 #define ASSERT(x)
@@ -194,6 +203,9 @@
 #define ASSERT_XOR(x, y)
 #define ASSERT_NOT(x)
 #define ASSERT_EQFISH(a, b)
+
+#define ASSERT_FITS(v, ...)
+#define ASSERT_FITSV(v, ...)
 
 #endif
 
