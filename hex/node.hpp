@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/mathbits.hpp>
 #include <core/reporting.hpp>
 
 #include <cstdint>
@@ -112,14 +113,13 @@ class nodecoords {
     constexpr static int separation(int aq, int ar, int bq, int br) {
         int as = -aq - ar;
         int bs = -bq - br;
-
-        return (aq - bq) * (aq - bq) +
-               (ar - br) * (ar - br) +
-               (as - bs) * (as - bs);
+        return math::abs(aq - bq) + math::abs(ar - br) + math::abs(as - bs);
     }
 
 public:
-    constexpr nodecoords(standard_integral auto q, standard_integral auto r): q_(q), r_(r) {
+    constexpr nodecoords(int q, int r): q_(q), r_(r) {
+        ASSERT_FITS(q, index_t);
+        ASSERT_FITS(r, index_t);
         ASSERT_FITS(-q - r, index_t);
         ASSERT_MSG((q - r) % 3 == 0, "off-grid node (" << q << "," << r << ")");
     }
@@ -128,12 +128,38 @@ public:
     constexpr int16_t r() const { return r_; }
     constexpr int16_t s() const { return -q() - r(); }
 
+    nodecoords shifted(int q, int r) const { return {q_ + q, r_ + r}; }
+    nodecoords shifted(nodecoords c) const { return {q_ + c.q_, r_ + c.r_}; }
+
     bool operator==(const nodecoords&) const = default;
     auto operator<=>(const nodecoords&) const = default;
 
     constexpr bool owns(nodecoords c) const {
         ASSERT(is_center());
-        return separation(q_ - 1, r_ + 1, c.q_, c.r_) < 15;
+
+        // (-1, 1) is the center of the owned nodes
+        // ( 0, 3) is an arbitrary owned node at greatest distance
+
+        //            ♢       ♢       ♢            //
+        //                                         //
+        //                                         //
+        //                                         //
+        //        ♦       ♦       ♦       ♢        //
+        //                                         //
+        //                                         //
+        //                   0,0                   //
+        //    ♦       ♦       ♦       ♦       ♢    //
+        //              -1,1                       //
+        //                °                        //
+        //                                         //
+        //        ♦       ♦       ♦       ♢        //
+        //                                         //
+        //                                         //
+        //                   0,3                   //
+        //            ♦       ♦       ♢            //
+
+        constexpr int max = separation(-1, 1, 0, 3);
+        return separation(q_ - 1, r_ + 1, c.q_, c.r_) <= max;
     }
 
     // center node of the hex owning this node
@@ -153,6 +179,12 @@ public:
 
 void foreach_nodeshift(std::invocable<nodecoords> auto &&f) {
 #define X(i, q, r) f(nodecoords{q, r});
+    ARCHNODE_CORE_TRAITS(X);
+#undef X
+}
+
+void foreach_nodeshift(std::invocable<int, nodecoords> auto &&f) {
+#define X(i, q, r) f(i, nodecoords{q, r});
     ARCHNODE_CORE_TRAITS(X);
 #undef X
 }
@@ -186,7 +218,7 @@ consteval bool constants_match_offsets() {
         if (nib(DR_BY_J, j) - 2 != dr) return false;
     }
 
-    return seen == 0xFFFu;
+    return seen == 0xfff;
 }
 
 static_assert(constants_match_offsets());

@@ -225,11 +225,10 @@ constexpr float sqrt3 = std::numbers::sqrt3;
 constexpr float pi = std::numbers::pi;
 
 
-constexpr auto abs(std::signed_integral auto x) {
-    using T = decltype(x);
+template <std::signed_integral T>
+constexpr auto abs(T x) {
     ASSERT_NE(x, std::numeric_limits<T>::min());
-    T mask = x >> std::numeric_limits<T>::digits;
-    return (x ^ mask) - mask;
+    return std::abs(x);
 }
 
 constexpr auto abs(std::unsigned_integral auto x) { return x; }

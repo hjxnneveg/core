@@ -14,6 +14,9 @@ DEFINE_TEST(nodes) {
         TEST(hex::is_nodeshift(c.q(), c.r()));
     });
 
+    hex::foreach_nodeshift([](int, hex::nodecoords) {});
+    hex::foreach_nodeshift([](size_t, hex::nodecoords) {});
+
     TEST(!hex::is_nodeshift(-2,-2));
     TEST(!hex::is_nodeshift( 0,-3));
     TEST(!hex::is_nodeshift( 2,-4));
@@ -41,6 +44,44 @@ void test_indices(auto &&f) {
 DEFINE_TEST(unique_idx) {
     test_indices(hex::impl::coord_index);
     test_indices(hex::impl::shift_index);
+}
+
+void test_owner(hex::nodecoords offset) {
+    auto f = [](hex::nodecoords chief, hex::nodecoords sub){ TEST(chief.owns(sub)); };
+
+    f(offset.shifted( 0,-6), offset.shifted(-2,-2));
+    f(offset.shifted( 0,-6), offset.shifted( 0,-3));
+    f(offset.shifted( 6,-6), offset.shifted( 2,-4));
+
+    f(offset.shifted( 0, 0), offset.shifted(-3, 0));
+    f(offset.shifted( 0, 0), offset.shifted(-1,-1));
+    f(offset.shifted( 0, 0), offset.shifted( 1,-2));
+    f(offset.shifted( 6,-6), offset.shifted( 3,-3));
+
+    f(offset.shifted( 0, 0), offset.shifted(-4, 2));
+    f(offset.shifted( 0, 0), offset.shifted(-2, 1));
+    f(offset.shifted( 0, 0), offset.shifted( 0, 0));
+    f(offset.shifted( 0, 0), offset.shifted( 2,-1));
+    f(offset.shifted( 6,-6), offset.shifted( 4,-2));
+
+    f(offset.shifted( 0, 0), offset.shifted(-3, 3));
+    f(offset.shifted( 0, 0), offset.shifted(-1, 2));
+    f(offset.shifted( 0, 0), offset.shifted( 1, 1));
+    f(offset.shifted( 6, 0), offset.shifted( 3, 0));
+
+    f(offset.shifted( 0, 0), offset.shifted(-2, 4));
+    f(offset.shifted( 0, 0), offset.shifted( 0, 3));
+    f(offset.shifted( 6, 0), offset.shifted( 2, 2));
+}
+
+DEFINE_TEST(owner) {
+    test_owner({-6, 0});
+    test_owner({-6, 6});
+    test_owner({ 0,-6});
+    test_owner({ 0, 0});
+    test_owner({ 0, 6});
+    test_owner({ 6,-6});
+    test_owner({ 6, 0});
 }
 
 }
