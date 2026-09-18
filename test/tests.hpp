@@ -34,6 +34,7 @@
 #define TEST_REPR(x, y) TEST_EQ(TO_STRING(x), TO_STRING(y))
 
 #if ASSERTS_ON
+
 #define TEST_THROW(...)                         \
     do {                                        \
         bool fail = false;                      \
@@ -45,8 +46,21 @@
         catch (...) { fail = true; }            \
         TEST(fail);                             \
     } while (false)
+
+#define TEST_THROW_MSG(x, ...)                  \
+    do {                                        \
+        bool fail = false;                      \
+        try {                                   \
+            std::ostringstream ss;              \
+            auto_err MKVARNAME(_)(ss, false);   \
+            x;                                  \
+        }                                       \
+        catch (...) { fail = true; }            \
+        TEST_MSG(fail, __VA_ARGS__);            \
+    } while (false)
 #else
 #define TEST_THROW(...)
+#define TEST_THROW_MSG(...)
 #endif
 
 #define TEST_EQFISH_COORDS(a, b)                                \

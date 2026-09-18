@@ -105,6 +105,8 @@ using impl::is_nodeshift;
 
 class nodecoords {
     using index_t = int16_t;
+    constexpr static index_t nilrepr = std::numeric_limits<index_t>::min();
+
     index_t q_;
     index_t r_;
 
@@ -117,19 +119,31 @@ class nodecoords {
     }
 
 public:
+    constexpr nodecoords(): q_(nilrepr), r_(nilrepr) {}
+
     constexpr nodecoords(int q, int r): q_(q), r_(r) {
         ASSERT_FITS(q, index_t);
         ASSERT_FITS(r, index_t);
         ASSERT_FITS(-q - r, index_t);
+
+        ASSERT_NE(q, nilrepr);
+        ASSERT_NE(r, nilrepr);
+        ASSERT_NE(-q - r, nilrepr);
+
         ASSERT_MSG((q - r) % 3 == 0, "off-grid node (" << q << "," << r << ")");
     }
+
+    constexpr explicit operator bool() const { return q_ != nilrepr; }
 
     constexpr int16_t q() const { return q_; }
     constexpr int16_t r() const { return r_; }
     constexpr int16_t s() const { return -q() - r(); }
 
     nodecoords shifted(int q, int r) const { return {q_ + q, r_ + r}; }
-    nodecoords shifted(nodecoords c) const { return {q_ + c.q_, r_ + c.r_}; }
+
+    nodecoords operator+(nodecoords c) const { return {q_ + c.q_, r_ + c.r_}; }
+    nodecoords operator-(nodecoords c) const { return {q_ - c.q_, r_ - c.r_}; }
+    nodecoords operator-() const { return {-q_, -r_}; }
 
     bool operator==(const nodecoords&) const = default;
     auto operator<=>(const nodecoords&) const = default;
@@ -172,7 +186,7 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &os, nodecoords nc) {
-        return os << "(" << nc.q() << "/6, " << nc.r() << "/6)";
+        return os << "(" << nc.q_ << "/6, " << nc.r_ << "/6)";
     }
 };
 
@@ -187,6 +201,43 @@ void foreach_nodeshift(std::invocable<int, nodecoords> auto &&f) {
 #define X(i, q, r) f(i, nodecoords{q, r});
     ARCHNODE_CORE_TRAITS(X);
 #undef X
+}
+
+// Travel along the edges of the 3-6 kisrhombille.
+// Two single-unit "moves" land you on a node.
+// fore + starboard must be even.
+constexpr nodecoords bearing(int ock, int fore, int starboard) {
+    ASSERT_NOT((fore + starboard) & 1);
+
+    if (ock >= 6) ock -= 6, fore = -fore, starboard = -starboard;
+
+    auto f = [](int heavy, int light) { return (heavy * 3 + light) / 2; };
+
+    switch (ock) {
+    case 0: return {starboard,           -f(fore, starboard)};
+    case 1: return {f(starboard, fore),  -fore};
+    case 2: return {f(fore, starboard),  f(-fore, starboard)};
+    case 3: return {fore,                f(starboard, -fore)};
+    case 4: return {f(fore, -starboard), starboard};
+    case 5: return {f(-starboard, fore), f(starboard, fore)};
+    default: ERROR(ock << " o'clock");
+    }
+}
+
+constexpr int16_t reach(int ock, nodecoords nc) {
+    auto f = [=](int ock)->int16_t {
+        switch (ock % 6) {
+        case 0: return -(nc.q() + 2 * nc.r()) / 3;
+        case 1: return -nc.r();
+        case 2: return (nc.q() - nc.r()) / 3;
+        case 3: return nc.q();
+        case 4: return (2 * nc.q() + nc.r()) / 3;
+        case 5: return -nc.s();
+        default: ERROR(ock << " o'clock");
+        }
+    };
+
+    return ock < 6 ? f(ock) : -f(ock);
 }
 
 

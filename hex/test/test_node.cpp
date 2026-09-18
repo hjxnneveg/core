@@ -7,9 +7,11 @@
 
 namespace hjx {
 
+void test_eq(hex::nodecoords a, hex::nodecoords b) { TEST_MSG(a == b, a << " vs " << b); }
+
 DEFINE_TEST(nodes) {
     hex::foreach_nodeshift([](hex::nodecoords c) {
-        TEST_EQ(c.chief(), hex::nodecoords(0,0));
+        test_eq(c.chief(), {0,0});
         TEST(hex::nodecoords(0,0).owns(c));
         TEST(hex::is_nodeshift(c.q(), c.r()));
     });
@@ -82,6 +84,57 @@ DEFINE_TEST(owner) {
     test_owner({ 0, 6});
     test_owner({ 6,-6});
     test_owner({ 6, 0});
+}
+
+DEFINE_TEST(bearing) {
+    using namespace hex;
+
+    for (int ock = 0; ock < 12; ock++)
+        for (int fore = -6; fore <= 6; fore++)
+            for (int sb = -6; sb <= 6; sb++)
+                if ((fore + sb) & 1)
+                    TEST_THROW_MSG(bearing(ock, fore, sb),
+                                   ock << " " << fore << " " << sb << " "
+                                   << bearing(ock, fore, sb));
+                else {
+                    nodecoords a = bearing(ock, fore, sb);
+                    TEST(a);
+                    nodecoords b = bearing((ock + 6) % 12, -fore, -sb);
+                    TEST_EQ(a, b);
+
+                    TEST_EQ(reach(ock, a), fore);
+                    TEST_EQ(reach((ock + 3) % 12, a), sb);
+                }
+
+    for (int ock = 0; ock < 12; ock++)
+        test_eq(bearing(ock, 0, 0), {0,0});
+
+    TEST_THROW(bearing(-1, 0, 0));
+    TEST_THROW(bearing(13, 0, 0));
+
+    // the clock ring
+    test_eq(bearing( 0, 2, 0), { 0,-3});
+    test_eq(bearing( 1, 2, 0), { 1,-2});
+    test_eq(bearing( 2, 2, 0), { 3,-3});
+    test_eq(bearing( 3, 2, 0), { 2,-1});
+    test_eq(bearing( 4, 2, 0), { 3, 0});
+    test_eq(bearing( 5, 2, 0), { 1, 1});
+    test_eq(bearing( 6, 2, 0), { 0, 3});
+    test_eq(bearing( 7, 2, 0), {-1, 2});
+    test_eq(bearing( 8, 2, 0), {-3, 3});
+    test_eq(bearing( 9, 2, 0), {-2, 1});
+    test_eq(bearing(10, 2, 0), {-3, 0});
+    test_eq(bearing(11, 2, 0), {-1,-1});
+
+
+    test_eq(bearing(0, 1, 1), { 1,-2});
+    test_eq(bearing(6,-1,-1), { 1,-2});
+    test_eq(bearing(0, 0, 2), { 2,-1});
+    test_eq(bearing(0,-2, 4), { 4, 1});
+    test_eq(bearing(1, 2, 0), { 1,-2});
+    test_eq(bearing(1, 0, 2), { 3, 0});
+    test_eq(bearing(1, 0,-2), {-3, 0});
+    test_eq(bearing(1,-1,-1), {-2, 1});
 }
 
 }
