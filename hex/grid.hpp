@@ -97,6 +97,8 @@ class grid {
     const size_t count_;
     std::vector<Hex> grid_;
 
+    grid(const grid&) = default;
+
 public:
     using hex_type = Hex;
 
@@ -105,7 +107,6 @@ public:
     }
 
     grid(grid&&) = delete;
-    grid(const grid&) = delete;
     grid &operator=(grid&&) = delete;
     grid &operator=(const grid&) = delete;
 
@@ -113,6 +114,8 @@ public:
     size_t count() const { return count_; }
 
     void wipe() { for (Hex &e : grid_) e = Hex(); }
+
+    grid clone() const { return *this; }
 
     bool in_bounds(qrs pos) const {
         ASSERT_MSG(pos.integral(), pos << " not integral");

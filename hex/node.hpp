@@ -3,39 +3,45 @@
 
 #pragma once
 
+#include <core/coords.hpp>
 #include <core/mathbits.hpp>
 #include <core/reporting.hpp>
 
+#include <concepts>
 #include <cstdint>
+#include <limits>
 #include <ostream>
 
 // Intra-hex node coordinates.
 //
-// Node coords are at 6× qrs resolution.  Hex centers are multiple of 6 (two nodes
-// sit in the same slot of their hex if they agree mod 6).
+// Node coords are at 6× qrs resolution.  Hex centers are multiple of 6 (two nodes sit
+// in the same slot of their hex if they agree mod 6).  Perimeter nodes overlap with
+// adjacent hexes.
 //
 // Valid node positions are (q - r) % 3 == 0.  A hex owns 12 nodes--its 7 interior
 // nodes and 5 of the 12 on its perimeter.
 
-//            ♢       ♢       ♢           //
-//                                        //
-//                                        //
-//                                        //
-//        ♦       ♦       ♦       ♢       //
-//      -3,+0   -1,-1   +1,-2             //
-//                                        //
-//                                        //
-//    ♦       ♦       ♦       ♦       ♢   //
-//  -4,+2   -2,+1   +0,+0   +2,-1         //
-//                                        //
-//                                        //
-//        ♦       ♦       ♦       ♢       //
-//      -3,+3   -1,+2   +1,+1             //
-//                                        //
-//                                        //
-//            ♦       ♦       ♢           //
-//          -2,+4   +0,+3                 //
+//            ♢       ♢       ♢            //
+//          -2,-2   +0,-3   +2,-4          //
+//                                         //
+//                                         //
+//        ♦       ♦       ♦       ♢        //
+//      -3,+0   -1,-1   +1,-2   +3,-3      //
+//                                         //
+//                                         //
+//    ♦       ♦       ♦       ♦       ♢    //
+//  -4,+2   -2,+1   +0,+0   +2,-1   +4,-2  //
+//                                         //
+//                                         //
+//        ♦       ♦       ♦       ♢        //
+//      -3,+3   -1,+2   +1,+1   +3,+0      //
+//                                         //
+//                                         //
+//            ♦       ♦       ♢            //
+//          -2,+4   +0,+3   +2,+2          //
 
+
+// perfect hash order
 #define ARCHNODE_CORE_TRAITS_SEP(X, SEP)        \
     /* i   q   r */                             \
     X( 0,  0,  0) SEP                           \
@@ -57,6 +63,8 @@
 namespace hjx::hex::impl {
 
 constexpr uint64_t sparse_nsbit(int q, int r) {
+    ASSERT_GE_LE(q, -4, 2);
+    ASSERT_GE_LE(r, -2, 4);
     return uint64_t(1) << ((q + 4) * 8 + r + 2);
 }
 
@@ -133,11 +141,25 @@ public:
         ASSERT_MSG((q - r) % 3 == 0, "off-grid node (" << q << "," << r << ")");
     }
 
+    constexpr nodecoords(qrs pos, nodecoords shift):
+        nodecoords(pos.qi() * 6 + shift.q(), pos.ri() * 6 + shift.r()) {}
+
     constexpr explicit operator bool() const { return q_ != nilrepr; }
 
     constexpr int16_t q() const { return q_; }
     constexpr int16_t r() const { return r_; }
     constexpr int16_t s() const { return -q() - r(); }
+
+    qrs tile_coords() const {
+        constexpr float scale = 1/6.f;
+
+        []() consteval {
+            for (int32_t i = -66000; i < 33000; i += 6)
+                ASSERT_EQ(i / 6.f, 1/6.f * i);
+        }();
+
+        return {q() * scale, r() * scale};
+    }
 
     nodecoords shifted(int q, int r) const { return {q_ + q, r_ + r}; }
 
@@ -149,7 +171,7 @@ public:
     auto operator<=>(const nodecoords&) const = default;
 
     constexpr bool owns(nodecoords c) const {
-        ASSERT(is_center());
+        ASSERT_MSG(is_center(), "non-center " << *this);
 
         // (-1, 1) is the center of the owned nodes
         // ( 0, 3) is an arbitrary owned node at greatest distance
@@ -181,8 +203,8 @@ public:
         using namespace impl;
 
         size_t j = coord_index(q_, r_);
-        return nodecoords(q_ - (nib(DQ_BY_J, j) - 4),
-                          r_ - (nib(DR_BY_J, j) - 2));
+        return {q_ - (nib(DQ_BY_J, j) - 4),
+                r_ - (nib(DR_BY_J, j) - 2)};
     }
 
     friend std::ostream &operator<<(std::ostream &os, nodecoords nc) {
@@ -204,10 +226,11 @@ void foreach_nodeshift(std::invocable<int, nodecoords> auto &&f) {
 }
 
 // Travel along the edges of the 3-6 kisrhombille.
-// Two single-unit "moves" land you on a node.
+// Two steps from a node lands you on another node.
 // fore + starboard must be even.
-constexpr nodecoords bearing(int ock, int fore, int starboard) {
-    ASSERT_NOT((fore + starboard) & 1);
+constexpr nodecoords bearing(unsigned ock, int fore, int starboard) {
+    ASSERT_LT(ock, 12);
+    ASSERT_NOT((fore ^ starboard) & 1);
 
     if (ock >= 6) ock -= 6, fore = -fore, starboard = -starboard;
 
@@ -220,24 +243,26 @@ constexpr nodecoords bearing(int ock, int fore, int starboard) {
     case 3: return {fore,                f(starboard, -fore)};
     case 4: return {f(fore, -starboard), starboard};
     case 5: return {f(-starboard, fore), f(starboard, fore)};
-    default: ERROR(ock << " o'clock");
+    default: std::unreachable();
     }
 }
 
-constexpr int16_t reach(int ock, nodecoords nc) {
-    auto f = [=](int ock)->int16_t {
-        switch (ock % 6) {
-        case 0: return -(nc.q() + 2 * nc.r()) / 3;
+constexpr int16_t reach(unsigned ock, nodecoords nc) {
+    ASSERT_LT(ock, 12);
+
+    auto f = [=](unsigned ock)->int16_t {
+        switch (ock) {
+        case 0: return -(nc.r() - nc.s()) / 3;
         case 1: return -nc.r();
-        case 2: return (nc.q() - nc.r()) / 3;
-        case 3: return nc.q();
-        case 4: return (2 * nc.q() + nc.r()) / 3;
+        case 2: return  (nc.q() - nc.r()) / 3;
+        case 3: return  nc.q();
+        case 4: return  (nc.q() - nc.s()) / 3;
         case 5: return -nc.s();
-        default: ERROR(ock << " o'clock");
+        default: std::unreachable();
         }
     };
 
-    return ock < 6 ? f(ock) : -f(ock);
+    return ock < 6 ? f(ock) : -f(ock - 6);
 }
 
 

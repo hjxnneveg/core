@@ -33,6 +33,10 @@ DEFINE_TEST(hexgrid) {
     TEST_EQ(big.count(), 231019);
 
     TEST_THROW(hex::grid<int>{6});
+
+    hex::grid<int> g2 = g.clone();
+    g2.to_hex(6)++;
+    TEST_EQ(g.to_hex(6) + 1, g2.to_hex(6));
 }
 
 DEFINE_TEST(bounds) {

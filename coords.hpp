@@ -266,6 +266,10 @@ struct qrs : coords {
 
     uint64_t hash() const { return ::hjx::hash(id()); }
 
+    constexpr int qi() const { ASSERT_EQ(q(), std::trunc(q())); return q(); }
+    constexpr int ri() const { ASSERT_EQ(r(), std::trunc(r())); return r(); }
+    constexpr int si() const { ASSERT_EQ(s(), std::trunc(s())); return s(); }
+
     // cart_dist doesn't guarantee flint on axes
     float abs() const { return sqrt(sqabs(q(), r())); }
 
