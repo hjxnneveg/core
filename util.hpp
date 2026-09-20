@@ -14,6 +14,11 @@
 #include <sstream>
 #include <type_traits>
 
+
+#define COMMA ,
+
+#define HJX_UNGROUP(...) __VA_ARGS__
+
 #define CONCAT2(x, y) x##y
 #define CONCAT(x, y) CONCAT2(x, y)
 
@@ -25,6 +30,21 @@
 
 // fixme - doesn't work for STL temporaries
 #define TO_STRING(x) (static_cast<std::ostringstream&&>(std::ostringstream() << x).str())
+
+
+// HJX_APPLY_NONEMPTY(f, (args))        => f(args)
+// HJX_APPLY_NONEMPTY(f, ())            =>
+// HJX_APPLY_NONEMPTY(f, (args), ;)     => f(args) ;
+// HJX_APPLY_NONEMPTY(f, (args), COMMA) => f(args) ,
+// HJX_APPLY_NONEMPTY(f, (args), ,)     => f(args) ,  # heh
+// HJX_APPLY_NONEMPTY(f, (), ;)         =>            # separator suppressed
+
+#define HJX_APPLY_NONEMPTY(f, group, ...) \
+    HJX_APPLY_NONEMPTY1(f, (__VA_ARGS__), HJX_UNGROUP group)
+
+#define HJX_APPLY_NONEMPTY1(f, sep, ...) \
+    __VA_OPT__(f(__VA_ARGS__) HJX_UNGROUP sep)
+
 
 namespace hjx {
 
