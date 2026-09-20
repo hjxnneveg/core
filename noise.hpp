@@ -3,46 +3,58 @@
 
 #pragma once
 
-#include "core/logging.hpp"
+#include "mathbits.hpp"
 #include "uptime.hpp"
 #include "reporting.hpp"
 #include "entropy.hpp"
 #include "coords.hpp"
 
-#include "external/PerlinNoise.hpp"
-#include "external/stegu/simplexnoise1234.hpp"
+#include <external/PerlinNoise.hpp>
+#include <external/stegu/simplexnoise1234.hpp>
 
 #include <cmath>
 #include <concepts>
 
-namespace hjx {
-
-inline float stud(duration d) {
-    static siv::BasicPerlinNoise<float> perl(time::now_ns());
-    float v = perl.noise1D(time::uptime().seconds() / to_seconds(d));
-    static float min = 1, max = -1;
-    if (v < min) min = v;
-    if (v > max) max = v;
-    float scale = 2 / (max - min);
-    v = v * scale - min - 1;
-    float ret = v * 0.5f + 0.5f;
-    ASSERT_GE_LE(ret, 0, 1);
-    return ret;
-}
-
-}
-
 namespace hjx::noise {
 
-class linear {
+class bilinear {
     uint64_t seed_;
 
     float calc_vertex(xy c) const {
-        ASSERT_EQ(c.x(), std::trunc(c.x()));
-        ASSERT_EQ(c.y(), std::trunc(c.y()));
+        ASSERT_MSG(c.integral(), "non-integral " << c);
         return 2 * stud(hash(c.id() + seed_)) - 1;
     }
 
+    static float fade(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+
+public:
+    bilinear(uint64_t seed): seed_(seed) {}
+
+    float operator()(xy p) const {
+        float x0 = std::floor(p.x());
+        float y0 = std::floor(p.y());
+        float u = fade(p.x() - x0);
+        float v = fade(p.y() - y0);
+
+        xy p00(x0, y0),     p10(x0 + 1, y0);
+        xy p01(x0, y0 + 1), p11(x0 + 1, y0 + 1);
+
+        return math::lerp(v,
+                          math::lerp(u, calc_vertex(p00), calc_vertex(p10)),
+                          math::lerp(u, calc_vertex(p01), calc_vertex(p11)));
+    }
+};
+
+
+class quilted {
+    uint64_t seed_;
+
+    float calc_vertex(xy c) const {
+        ASSERT_MSG(c.integral(), "non-integral " << c);
+        return 2 * stud(hash(c.id() + seed_)) - 1; // [-1.f, 1.f)
+    }
+
+    // Franke-Little (!Butler)
     float weight(xy v, xy p) const {
         float d = cart_dist(v, p);
         if (d < 1) return (1 - d) * (1 - d);
@@ -50,25 +62,25 @@ class linear {
     }
 
 public:
-    linear(uint64_t seed): seed_(seed) {}
+    quilted(uint64_t seed): seed_(seed) {}
 
-    float get(xy c) {
-        float x1 = std::trunc(c.x());
-        float y1 = std::trunc(c.y());
-        float x2 = c.x() > 0 ? x1 + 1 : x1 - 1;
-        float y2 = c.y() > 0 ? y1 + 1 : y1 - 1;
+    float operator()(xy p) {
+        float x1 = std::trunc(p.x());
+        float y1 = std::trunc(p.y());
+        float x2 = p.x() > 0 ? x1 + 1 : x1 - 1;
+        float y2 = p.y() > 0 ? y1 + 1 : y1 - 1;
 
-        xy c11(x1, y1); xy c12(x1, y2); xy c21(x2, y1); xy c22(x2, y2);
+        xy p11(x1, y1); xy p12(x1, y2); xy p21(x2, y1); xy p22(x2, y2);
 
-        float w11 = weight(c, c11);
-        float w12 = weight(c, c12);
-        float w21 = weight(c, c21);
-        float w22 = weight(c, c22);
+        float w11 = weight(p, p11);
+        float w12 = weight(p, p12);
+        float w21 = weight(p, p21);
+        float w22 = weight(p, p22);
 
-        return (w11 * calc_vertex(c11) +
-                w12 * calc_vertex(c12) +
-                w21 * calc_vertex(c21) +
-                w22 * calc_vertex(c22)) / (w11 + w12 + w21 + w22);
+        return (w11 * calc_vertex(p11) +
+                w12 * calc_vertex(p12) +
+                w21 * calc_vertex(p21) +
+                w22 * calc_vertex(p22)) / (w11 + w12 + w21 + w22);
     }
 };
 
