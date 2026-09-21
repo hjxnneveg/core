@@ -126,7 +126,7 @@ public:
         return hex::in_bounds(q, r, width_);
     }
 
-    void assert_in_bounds(qrs pos) const {
+    void assert_in_bounds(qrs IF_ASSERTS_ON(pos)) const {
         ASSERT_MSG(in_bounds(pos), pos << " out of bounds");
     }
 

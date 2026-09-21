@@ -52,27 +52,4 @@ using std::string;
 using std::string_view;
 using std::vector;
 
-#if 0
-template <class F>
-constexpr void foreach_u64(const char *p, size_t n, F &&f) {
-    while (n >= 8) {
-        uint64_t chunk = 0;
-        for (size_t i = 0; i < 8; i++) chunk = (chunk << 8) | *p++;
-        f(chunk);
-        n -= 8;
-    }
-
-    if (n) {
-        uint64_t dregs = 0;
-        for (size_t i = 0; i < n; i++) dregs = (dregs << 8) | *p++;
-        f(dregs);
-    }
-}
-
-inline const char *starts_with(const char *s, const char *prefix) noexcept {
-    while (*prefix && *s == *prefix) { s++; prefix++; }
-    return *prefix ? nullptr : s;
-}
-#endif
-
 }

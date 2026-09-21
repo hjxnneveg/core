@@ -22,6 +22,13 @@ DEFINE_TEST(honest_float) {
     }
 }
 
+DEFINE_TEST(as_hex) {
+    TEST_REPR(as_hex{0}, "0x0000'0000'0000'0000");
+    TEST_REPR(as_hex{1}, "0x0000'0000'0000'0001");
+    TEST_REPR(as_hex{0x0123'4567'89ab'cdef}, "0x0123'4567'89ab'cdef");
+    TEST_REPR(as_hex{0xffff'ffff'ffff'ffff}, "0xffff'ffff'ffff'ffff");
+}
+
 }
 
 int main(int, const char *argv[]) {

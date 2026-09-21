@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "mathbits.hpp"
 #include "reporting.hpp"
 
 #include <algorithm>
@@ -272,10 +273,51 @@ constexpr float normal_approx(auto &rand) {
     return (sum - 2) * sqrtf(3);
 }
 
+///
+///  hashing
+///
 
-uint64_t hash(const void*, size_t) noexcept;
+constexpr uint64_t read_le64(const char *p) {
+    static_assert(little_endian());
+
+    return uint64_t(static_cast<uint8_t>(p[0]))
+        |  uint64_t(static_cast<uint8_t>(p[1])) << 8
+        |  uint64_t(static_cast<uint8_t>(p[2])) << 16
+        |  uint64_t(static_cast<uint8_t>(p[3])) << 24
+        |  uint64_t(static_cast<uint8_t>(p[4])) << 32
+        |  uint64_t(static_cast<uint8_t>(p[5])) << 40
+        |  uint64_t(static_cast<uint8_t>(p[6])) << 48
+        |  uint64_t(static_cast<uint8_t>(p[7])) << 56;
+}
+
+constexpr uint64_t read_le64(const char *p, size_t n) {
+    ASSERT_LT(n, 8);
+    uint64_t u = 0;
+
+    for (size_t i = 0; i < n; i++)
+        u |= uint64_t(static_cast<uint8_t>(p[i])) << (i * 8);
+
+    return u;
+}
+
+constexpr uint64_t hash(const char *p, size_t len) {
+    ASSERT(p || !len);
+
+    uint64_t acc = entropy::stafford02(len);
+
+    auto absorb = [&](uint64_t chunk) { acc = entropy::stafford01(acc ^ chunk); };
+
+    size_t i = 0;
+    for (; i + 8 <= len; i += 8) absorb(read_le64(p + i));
+
+    if (i < len) absorb(read_le64(p + i, len - i));
+
+    return entropy::murmur3mix(acc);
+}
+
 
 constexpr uint64_t hash(uint64_t z) { return entropy::murmur3mix(z); }
+
 
 constexpr uint64_t hash(std::integral auto a, std::integral auto b) {
     if constexpr (sizeof(a) > 4 || sizeof(b) > 4)

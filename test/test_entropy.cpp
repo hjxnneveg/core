@@ -11,14 +11,14 @@ DEFINE_TEST(hash) {
     auto hashc = [](const char *s) { return hash(s, strlen(s)); };
 
     // change detector
-    TEST_EQ(hashc("X."),               0x66f9'2898'fbad'1e02);
-    TEST_EQ(hashc(".X"),               0x1304'c864'f094'c4e5);
-    TEST_EQ(hashc("XX.."),             0x8da6'e982'5492'eae2);
-    TEST_EQ(hashc("..XX"),             0x710f'8657'0e29'3b5d);
-    TEST_EQ(hashc("XXXX...."),         0x7b47'ca4b'e253'cf18);
-    TEST_EQ(hashc("....XXXX"),         0x82ad'90aa'a166'9355);
-    TEST_EQ(hashc("XXXXXXXX........"), 0x650f'2206'0523'c744);
-    TEST_EQ(hashc("........XXXXXXXX"), 0x1321'c66c'8ea8'b5f4);
+    TEST_EQ(as_hex(hashc("X.")),               0x8b25'7441'd56b'e51au);
+    TEST_EQ(as_hex(hashc(".X")),               0x4809'fd9a'1aab'4c04u);
+    TEST_EQ(as_hex(hashc("XX..")),             0x5656'fbe0'fbfc'bf20u);
+    TEST_EQ(as_hex(hashc("..XX")),             0xdad5'779f'6264'9122u);
+    TEST_EQ(as_hex(hashc("XXXX....")),         0x6f4f'e285'38ea'9b04u);
+    TEST_EQ(as_hex(hashc("....XXXX")),         0x3c0b'7772'dbc5'918fu);
+    TEST_EQ(as_hex(hashc("XXXXXXXX........")), 0x5c83'acaa'6be8'072bu);
+    TEST_EQ(as_hex(hashc("........XXXXXXXX")), 0x2fd8'27d2'40b0'd202u);
 
     int16_t a16 = -45, b16 = 23;
     int64_t a64 = -45, b64 = 23;

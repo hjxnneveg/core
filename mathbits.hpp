@@ -46,20 +46,10 @@ constexpr phony_uint<T> to_uint(const T &v) {
 }
 
 template <std::integral T>
-T byteswap(T v) {
-    for (unsigned i = 0; i < sizeof(T) / 2; i++) {
-        uint8_t *p = reinterpret_cast<uint8_t*>(&v);
-        std::swap(*(p + i), *(p + sizeof(T) - 1 - i));
-    }
-
-    return v;
-}
+T little_endianize(T v) { return little_endian() ? v : std::byteswap(v); }
 
 template <std::integral T>
-T little_endianize(T v) { return little_endian() ? v : byteswap(v); }
-
-template <std::integral T>
-T big_endianize(T v) { return little_endian() ? byteswap(v) : v; }
+T big_endianize(T v) { return little_endian() ? std::byteswap(v) : v; }
 
 template <typename T>
 constexpr phony_uint<T> leftmost_bit =

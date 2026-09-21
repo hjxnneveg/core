@@ -40,4 +40,29 @@ public:
     }
 };
 
+class as_hex {
+    uint64_t storage;
+
+public:
+    explicit as_hex(uint64_t u): storage(u) {}
+
+    operator uint64_t() const { return storage; }
+
+    friend std::ostream &operator<<(std::ostream &os, as_hex u) {
+        static constexpr char digits[] = "0123456789abcdef";
+
+        char buf[21] = "0x";
+        char *p = buf + 2;
+
+        for (int i = 15; i >= 0; i--) {
+            *p++ = digits[(u.storage >> (i * 4)) & 0xf];
+            if (i % 4 == 0 && i != 0) *p++ = '\'';
+        }
+
+        // Inserting a string_view still honors os.width() and os.fill(), so
+        // `os << std::setw(24) << as_hex(x)` pads the whole token as expected.
+        return os << std::string_view(buf, sizeof buf);
+    }
+};
+
 }
