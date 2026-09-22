@@ -68,10 +68,10 @@ DEFINE_TEST(weefloat) {
     TEST(std::isfinite(float(weefloat{max_norm})));
     TEST_LT(weefloat{max_norm}.raw_(), 0xff00); // never reaches inf encoding
 
-    TEST_THROW(weefloat{1.f} == nan);
-    TEST_THROW(weefloat{1.f} == inf);
+    TEST_THROW((void)(weefloat{1.f} == nan));
+    TEST_THROW((void)(weefloat{1.f} == inf));
     TEST_THROW((void)(weefloat{1.f} < -1.f));
-    TEST_THROW(nan == weefloat{1.f});
+    TEST_THROW((void)(nan == weefloat{1.f}));
 }
 
 }

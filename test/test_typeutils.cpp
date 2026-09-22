@@ -48,7 +48,7 @@ DEFINE_TEST(countof) {
 }
 
 
-void picky_inteater(std::integral auto T) {}
+void picky_inteater(std::integral auto) {}
 
 void flexible_inteater(int) {}
 

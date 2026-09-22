@@ -215,10 +215,11 @@ constexpr float sqrt3 = std::numbers::sqrt3;
 constexpr float pi = std::numbers::pi;
 
 
+// clang doesn't believe std::abs is constexpr
 template <std::signed_integral T>
 constexpr auto abs(T x) {
     ASSERT_NE(x, std::numeric_limits<T>::min());
-    return std::abs(x);
+    return x < 0 ? -x : x;
 }
 
 constexpr auto abs(std::unsigned_integral auto x) { return x; }

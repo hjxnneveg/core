@@ -63,11 +63,15 @@ DEFINE_TEST(assert) {
         TEST_THROW(ASSERT_FITS(umax, S));                       \
     } while(false)
 
+
+template <typename T>
+void test_fits() { TEST_ASSERT_FITS(T); }
+
 DEFINE_TEST(fits) {
-    TEST_ASSERT_FITS(int8_t);
-    TEST_ASSERT_FITS(int16_t);
-    TEST_ASSERT_FITS(int32_t);
-    TEST_ASSERT_FITS(int64_t);
+    test_fits<int8_t>();
+    test_fits<int16_t>();
+    test_fits<int32_t>();
+    test_fits<int64_t>();
 }
 
 }
