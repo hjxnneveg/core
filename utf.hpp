@@ -5,8 +5,7 @@
 
 #include "entropy.hpp"
 
-#include <external/fast_float/fast_float.h>
-#include <external/utfcpp/source/utf8.h>
+#include <core/external/utfcpp/source/utf8.h>
 
 #include <charconv>
 #include <optional>
@@ -231,8 +230,7 @@ public:
 
     bool parse_double(double *p) {
         double value;
-        // fixme - clang
-        auto result = fast_float::from_chars(cur_, end_, value);
+        auto result = std::from_chars(cur_, end_, value);
         if (result.ec != std::errc()) return false;
         *p = value;
         col_ += result.ptr - cur_;
@@ -276,7 +274,7 @@ public:
 
 template<>
 struct std::hash<hjx::utf32_t> {
-    constexpr size_t operator()(hjx::utf32_t codepoint) const noexcept {
+    constexpr size_t operator()(hjx::utf32_t codepoint) const {
         return hjx::hash(codepoint.value);
     }
 };
