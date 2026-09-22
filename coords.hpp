@@ -59,7 +59,9 @@ struct coords {
 
 protected:
     static constexpr bool untyped_eq(coords a, coords b) {
-        return !std::memcmp(&a, &b, sizeof(coords));
+        // clang doesn't like constexpr memcmp
+        static_assert(sizeof(coords) == 8);
+        return std::bit_cast<uint64_t>(a) == std::bit_cast<uint64_t>(b);
     }
 };
 

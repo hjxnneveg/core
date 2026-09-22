@@ -3,7 +3,7 @@
 
 #include <core/genarray.hpp>
 
-#include <tests/tests.hpp>
+#include <core/test/tests.hpp>
 
 #include <string>
 #include <unordered_map>
