@@ -11,7 +11,7 @@
 
 #include <core/simplexnoise1234.hpp>
 
-#include <external/PerlinNoise.hpp>
+#include <core/external/PerlinNoise.hpp>
 
 #include <cmath>
 #include <concepts>

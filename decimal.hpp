@@ -4,7 +4,7 @@
 #pragma once
 
 #include "archive.hpp"
-#include "honest_float.hpp"
+#include "repr.hpp"
 #include "utf.hpp"
 #include "reporting.hpp"
 #include "mathbits.hpp"

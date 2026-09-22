@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025-2026 Joshua C Marshall
 
-#include "core/honest_float.hpp"
+#include <core/repr.hpp>
 
-#include "core/test/tests.hpp"
+#include <core/test/tests.hpp>
 
 namespace hjx {
 
@@ -33,7 +33,7 @@ DEFINE_TEST(as_hex) {
 
 int main(int, const char *argv[]) {
     try {
-        hjx::test::harness::exec("core:honest_float", argv);
+        hjx::test::harness::exec("core:repr", argv);
         return 0;
     }
     catch (const char *s) {
