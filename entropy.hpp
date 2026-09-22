@@ -328,16 +328,17 @@ constexpr uint64_t hash(std::integral auto a, std::integral auto b) {
 
 constexpr uint64_t hash(const std::string_view v) { return hash(v.data(), v.size()); }
 
-// [0..ub)
+// [0..ub)  (not that kind)
 constexpr uint32_t scale_seed_32(std::same_as<std::uint64_t> auto seed, uint32_t ub) {
     return (seed >> 32) * ub >> 32;
 }
 
 template <std::integral T>
 T randint(uint64_t seed, T min, T max) { // [min..max]
+    ASSERT_GE(max, min);
     uint64_t range = uint64_t(max) - uint64_t(min);
     ASSERT_LT(range, 0xffff'ffff);
-    return uint64_t(min) + scale_seed_32(seed, range + 1);
+    return static_cast<T>(uint64_t(min) + scale_seed_32(seed, range + 1));
 }
 
 template <std::integral T>
@@ -359,16 +360,15 @@ T randidx(auto &&rand, T sz) { // [0..sz)
 #define RANDELEM(rand, a) (a)[randidx((rand)(), countof(a))]
 
 
+// don't use std::shuffle.  it's not guaranteed equivalent across std libs.
 template <std::ranges::random_access_range R>
 requires std::permutable<std::ranges::iterator_t<R>>
 void shuffle(R &&range, auto &&rand) {
-    // todo - standardize rng and use std::shuffle
     // Fisher-Yates
     auto first = std::ranges::begin(range);
     auto N = std::ranges::distance(range);
-    auto &r = rand;
     for (auto i = N - 1; i; i--)
-        std::ranges::iter_swap(first + i, first + randint(r, decltype(i){0}, i));
+        std::ranges::iter_swap(first + i, first + randint(rand, decltype(i){0}, i));
 }
 
 

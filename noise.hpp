@@ -9,8 +9,9 @@
 #include "entropy.hpp"
 #include "coords.hpp"
 
+#include <core/simplexnoise1234.hpp>
+
 #include <external/PerlinNoise.hpp>
-#include <external/stegu/simplexnoise1234.hpp>
 
 #include <cmath>
 #include <concepts>
@@ -139,14 +140,8 @@ public:
 class simplex {
     unsigned char perm[512];
 
-    void permute(auto &&rand) {
-        std::iota(perm, perm + 256, 0);
-        shuffle(std::span(perm, perm + 256), std::forward<decltype(rand)>(rand));
-        std::memcpy(perm + 256, perm, 256);
-    }
-
 public:
-    simplex(uint64_t seed) { permute(rand_t(seed)); }
+    simplex(uint64_t seed) { stegu::gen_permutation(perm, rand_t(seed)); }
 
     float operator()(float a) const {
         return stegu::snoise1(perm, a);

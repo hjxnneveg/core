@@ -196,8 +196,40 @@ inline std::ostream &dump_prefix(std::ostream &os, const char *file, int line) {
     return os;
 }
 
+}
 
-string demangle(const char *name);
+#if defined(__GNUC__) || defined(__clang__)
+
+#include <cxxabi.h>
+
+namespace hjx {
+
+inline std::string demangle(const char *name) {
+    int status = -1;
+
+    std::unique_ptr<char, void(*)(void*)> ret {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+
+    ASSERT_EQ(status, 0);
+
+    return ret.get();
+}
+
+}
+
+#else
+
+namespace hjx {
+
+inline std::string demangle(const char *name) { return name; }
+
+}
+
+#endif
+
+namespace hjx {
 
 template <typename T>
 string type2str() { return demangle(typeid(T).name()); }

@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025-2026 Joshua C Marshall
+
 #pragma once
 
+#include "reporting.hpp"
 #include "statics.hpp"
 
 #include <chrono>
@@ -20,15 +24,26 @@ using duration = clock::duration;
 static_assert(sizeof(duration::rep) == 8);
 static_assert(std::is_same_v<duration::period, std::nano>);
 
-std::string tickstring(int64_t);
+inline std::string tickstring(int64_t n) {
+    ASSERT_GE(n, 0);
+
+    int64_t ks = n / 1'000'000'000'000;
+    int64_t  s = n / 1'000'000'000 % 1000;
+    int64_t ms = n / 1'000'000 % 1000;
+    int64_t us = n / 1'000 % 1000;
+    int64_t ns = n % 1000;
+
+    std::ostringstream ss;
+    ss << std::setfill('0') << '[';
+    ss << std::setw(3) << ks << '\'';
+    ss << std::setw(3) <<  s << '\'';
+    ss << std::setw(3) << ms << '\'';
+    ss << std::setw(3) << us << '\'';
+    ss << std::setw(3) << ns << ']';
+    return ss.str();
+}
 
 namespace time {
-
-#if 0
-inline float to_seconds(clock::duration d) noexcept {
-    return chrono::duration<float>(d).count();
-}
-#endif
 
 inline std::string format_now() {
     chrono::system_clock::time_point now = chrono::system_clock::now();

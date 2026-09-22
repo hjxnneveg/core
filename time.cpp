@@ -74,23 +74,4 @@ float uptime_seconds() {
 
 }
 
-std::string tickstring(int64_t n) {
-    ASSERT_GE(n, 0);
-
-    int64_t ks = n / 1'000'000'000'000;
-    int64_t  s = n / 1'000'000'000 % 1000;
-    int64_t ms = n / 1'000'000 % 1000;
-    int64_t us = n / 1'000 % 1000;
-    int64_t ns = n % 1000;
-
-    std::ostringstream ss;
-    ss << std::setfill('0') << '[';
-    ss << std::setw(3) << ks << '\'';
-    ss << std::setw(3) <<  s << '\'';
-    ss << std::setw(3) << ms << '\'';
-    ss << std::setw(3) << us << '\'';
-    ss << std::setw(3) << ns << ']';
-    return ss.str();
-}
-
 }
